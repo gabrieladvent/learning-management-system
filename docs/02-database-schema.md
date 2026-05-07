@@ -1,220 +1,279 @@
 # Database Schema
 
-## ERD Ringkasan
-
-```
-users
-  └─< classrooms (teacher_id)
-  └─< classroom_student (pivot enrollment)
-        └── classrooms
-
-classrooms
-  └─< topics
-  └─< materials
-  └─< assignments
-        └─< assignment_submissions (student_id)
-  └─< exams
-        └─< questions
-              └─< question_options
-        └─< exam_sessions (student_id)
-              └─< exam_answers
-  └─< announcements
-```
+Semua tabel menggunakan UUID sebagai PK dan soft delete kecuali pivot table.
 
 ---
 
-## Tabel Detail
+## users
 
-### `users` *(sudah ada, extend saja)*
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
+Tabel auth utama Laravel.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
 | name | string | |
-| email | string unique | |
-| password | string | |
-| email_verified_at | timestamp nullable | |
-| remember_token | string nullable | |
-| timestamps | | |
-
-> Role dikelola via **spatie/laravel-permission** (`model_has_roles`, dst).
-> Avatar dikelola via **spatie/laravel-media-library** (collection `avatar`).
+| email | string | unique |
+| email_verified_at | timestamp | nullable |
+| password | string | hashed |
+| is_active | boolean | default true |
+| last_login_at | timestamp | nullable |
+| last_login_ip | string | nullable |
+| password_changed_at | timestamp | nullable |
+| remember_token | string | nullable |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
 
 ---
 
-### `classrooms`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| teacher_id | bigint FK → users | |
-| name | string | Nama kelas, misal "Matematika 10A" |
-| subject | string | Mata pelajaran |
-| description | text nullable | |
-| code | string(8) unique | Kode join siswa |
-| academic_year | string | Contoh: "2025/2026" |
+## teachers
+
+Profil guru — one-to-one dengan `users`.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| user_id | uuid | FK → users.id |
+| full_name | string | |
+| nip | string | nullable, unique |
+| specialization | string | nullable |
+| phone | string | nullable |
+| nik | string | nullable, unique |
+| birth_date | date | nullable |
+| place_of_birth | string | nullable |
+| gender | enum | `male`, `female` |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
+
+---
+
+## students
+
+Profil siswa — one-to-one dengan `users`.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| user_id | uuid | FK → users.id |
+| school_id | uuid | FK → schools.id |
+| nisn | string | nullable, unique |
+| full_name | string | |
+| class | string | e.g. "X IPA 1" |
+| gender | enum | `male`, `female` |
+| place_of_birth | string | nullable |
+| birth_date | date | nullable |
+| is_active | boolean | default true |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
+
+---
+
+## schools
+
+Institusi/sekolah.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| name | string | |
+| address | text | nullable |
+| phone | string | nullable |
+| email | string | nullable |
+| logo | string | nullable, via media-library |
+| is_active | boolean | default true |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
+
+---
+
+## classrooms
+
+Kelas (rombongan belajar per tahun ajaran).
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| school_id | uuid | FK → schools.id |
+| teacher_id | uuid | FK → teachers.id (wali kelas) |
+| name | string | e.g. "X IPA 1" |
+| grade_level | string | e.g. "X", "XI", "XII" |
+| academic_year | string | e.g. "2025/2026" |
+| is_active | boolean | default true |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
+
+---
+
+## classroom_students (pivot)
+
+Siswa yang terdaftar di kelas.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| classroom_id | uuid | FK → classrooms.id |
+| student_id | uuid | FK → students.id |
+| enrolled_at | timestamp | default now |
+
+---
+
+## subjects
+
+Mata pelajaran.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| name | string | |
+| code | string | nullable, unique |
+| description | text | nullable |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
+
+---
+
+## classroom_subjects
+
+Assignment guru mengajar mata pelajaran di kelas tertentu.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| classroom_id | uuid | FK → classrooms.id |
+| subject_id | uuid | FK → subjects.id |
+| teacher_id | uuid | FK → teachers.id |
+| academic_year | string | e.g. "2025/2026" |
 | semester | tinyint | 1 atau 2 |
-| is_active | boolean default true | |
-| timestamps | | |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
 
 ---
 
-### `classroom_student` *(pivot)*
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| classroom_id | bigint FK | |
-| student_id | bigint FK → users | |
-| enrolled_at | timestamp | |
-| timestamps | | |
+## materials
 
----
+Materi pembelajaran per classroom_subject.
 
-### `topics`
-Pertemuan / topik untuk mengelompokkan materi, tugas, ujian.
-
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| classroom_id | bigint FK | |
-| title | string | Contoh: "Pertemuan 1: Aljabar" |
-| description | text nullable | |
-| order | unsignedInt default 0 | Urutan tampil |
-| timestamps | | |
-
----
-
-### `materials`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| classroom_id | bigint FK | |
-| topic_id | bigint FK nullable | |
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| classroom_subject_id | uuid | FK → classroom_subjects.id |
 | title | string | |
-| type | enum('text','file','link') | |
-| content | longtext nullable | Untuk type=text |
-| url | string nullable | Untuk type=link |
-| order | unsignedInt default 0 | |
-| is_published | boolean default false | |
-| published_at | timestamp nullable | |
-| timestamps | | |
+| description | text | nullable |
+| type | enum | `text`, `file`, `link` |
+| content | text | nullable (text body atau URL) |
+| topic | string | nullable (grouping/topik) |
+| order | integer | default 0 (urutan tampil) |
+| published_at | timestamp | nullable |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
 
-> File (PDF/Word/dll) dikelola via **media-library** pada collection `material_files`.
+> File attachment ditangani oleh Spatie Media Library (koleksi `material_files`).
 
 ---
 
-### `assignments`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| classroom_id | bigint FK | |
-| topic_id | bigint FK nullable | |
+## assignments
+
+Tugas per classroom_subject.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| classroom_subject_id | uuid | FK → classroom_subjects.id |
 | title | string | |
-| description | longtext | Instruksi soal |
+| description | text | nullable |
 | deadline | datetime | |
-| max_score | unsignedSmallInt default 100 | |
-| allow_late | boolean default false | |
-| is_published | boolean default false | |
-| published_at | timestamp nullable | |
-| timestamps | | |
+| max_score | decimal(5,2) | default 100 |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
+
+> File attachment guru: Spatie Media Library (koleksi `assignment_attachments`).
 
 ---
 
-### `assignment_submissions`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| assignment_id | bigint FK | |
-| student_id | bigint FK → users | |
-| content | longtext nullable | Jawaban teks |
-| url | string nullable | Jawaban link |
-| submitted_at | timestamp | |
-| is_late | boolean default false | |
-| score | decimal(5,2) nullable | Diisi guru |
-| feedback | text nullable | Komentar guru |
-| graded_at | timestamp nullable | |
-| graded_by | bigint FK → users nullable | |
-| timestamps | | |
+## assignment_submissions
 
-> File jawaban via **media-library** collection `submission_files`.
+Pengumpulan tugas oleh siswa.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| assignment_id | uuid | FK → assignments.id |
+| student_id | uuid | FK → students.id |
+| content | text | nullable (jawaban teks) |
+| submitted_at | timestamp | nullable |
+| score | decimal(5,2) | nullable |
+| feedback | text | nullable |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
+
+> File attachment siswa: Spatie Media Library (koleksi `submission_files`).
 
 ---
 
-### `exams`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| classroom_id | bigint FK | |
-| topic_id | bigint FK nullable | |
+## exams
+
+Ujian per classroom_subject.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| classroom_subject_id | uuid | FK → classroom_subjects.id |
 | title | string | |
-| description | text nullable | |
-| duration_minutes | unsignedSmallInt | Timer ujian |
-| start_time | datetime | Waktu buka ujian |
-| end_time | datetime | Waktu tutup ujian |
-| is_published | boolean default false | |
-| timestamps | | |
+| description | text | nullable |
+| starts_at | datetime | |
+| duration_minutes | integer | |
+| shuffle_questions | boolean | default false |
+| status | enum | `draft`, `published`, `closed` |
+| created_at / updated_at | timestamps | |
+| deleted_at | timestamp | soft delete |
 
 ---
 
-### `questions`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| exam_id | bigint FK | |
-| type | enum('multiple_choice','essay') | |
-| question_text | longtext | |
-| points | unsignedSmallInt default 1 | |
-| order | unsignedInt default 0 | |
-| timestamps | | |
+## exam_questions
+
+Soal ujian.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| exam_id | uuid | FK → exams.id |
+| type | enum | `multiple_choice`, `short_answer`, `essay` |
+| question | text | |
+| options | json | nullable (untuk multiple_choice: array pilihan) |
+| correct_answer | string | nullable (untuk multiple_choice) |
+| score | decimal(5,2) | bobot soal |
+| order | integer | default 0 |
+| created_at / updated_at | timestamps | |
+
+> File pada soal: Spatie Media Library (koleksi `question_files`).
 
 ---
 
-### `question_options` *(hanya untuk multiple_choice)*
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| question_id | bigint FK | |
-| option_text | text | |
-| is_correct | boolean default false | |
-| order | unsignedTinyInt default 0 | |
-| timestamps | | |
+## exam_sessions
+
+Sesi pengerjaan ujian oleh siswa.
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| exam_id | uuid | FK → exams.id |
+| student_id | uuid | FK → students.id |
+| started_at | timestamp | nullable |
+| submitted_at | timestamp | nullable |
+| total_score | decimal(5,2) | nullable |
+| created_at / updated_at | timestamps | |
 
 ---
 
-### `exam_sessions`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| exam_id | bigint FK | |
-| student_id | bigint FK → users | |
-| started_at | timestamp | |
-| finished_at | timestamp nullable | |
-| score | decimal(6,2) nullable | Auto-calculated |
-| status | enum('ongoing','completed','expired') | |
-| timestamps | | |
+## exam_answers
 
----
+Jawaban per soal per sesi ujian.
 
-### `exam_answers`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| exam_session_id | bigint FK | |
-| question_id | bigint FK | |
-| selected_option_id | bigint FK nullable | Untuk multiple_choice |
-| answer_text | text nullable | Untuk essay |
-| score | decimal(5,2) nullable | Essay dinilai manual guru |
-| timestamps | | |
-
----
-
-### `announcements`
-| Kolom | Tipe | Keterangan |
-|---|---|---|
-| id | bigint PK | |
-| classroom_id | bigint FK nullable | null = semua kelas guru |
-| teacher_id | bigint FK → users | |
-| title | string | |
-| content | longtext | |
-| published_at | timestamp nullable | |
-| timestamps | | |
-
-> Notifikasi ke siswa dikirim via Laravel Notification (tabel `notifications` bawaan Laravel).
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid | PK |
+| exam_session_id | uuid | FK → exam_sessions.id |
+| exam_question_id | uuid | FK → exam_questions.id |
+| answer | text | nullable |
+| score | decimal(5,2) | nullable (auto/manual grading) |
+| feedback | text | nullable |
+| created_at / updated_at | timestamps | |

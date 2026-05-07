@@ -1,45 +1,106 @@
-# Implementation Checklist
+# Implementation Checklist — Fase 1 (Teacher Dashboard)
 
-Centang saat selesai dikerjakan.
+## Enums
 
-## Phase 1 — Foundation
-- [ ] Buat semua migrations (lihat `05-migrations-order.md`)
-- [ ] Jalankan `php artisan migrate`
-- [ ] Buat semua Models dengan relasi lengkap
-- [ ] Tambahkan casts & fillable di setiap model
-- [ ] Setup Filament Panel (sudah ada, cek `AdminPanelProvider`)
+- [ ] `app/Models/Enums/GenderEnum.php`
+- [ ] `app/Models/Enums/MaterialTypeEnum.php`
+- [ ] `app/Models/Enums/ExamStatusEnum.php`
+- [ ] `app/Models/Enums/QuestionTypeEnum.php`
 
-## Phase 2 — Filament Resources (Teacher)
-- [ ] ClassroomResource + StudentsRelationManager + TopicsRelationManager
-- [ ] MaterialResource (form dengan conditional fields per type)
-- [ ] AssignmentResource + SubmissionsRelationManager + Grade action
-- [ ] ExamResource + QuestionsRelationManager + SessionsRelationManager
-- [ ] AnnouncementResource
+---
 
-## Phase 3 — Dashboard & UX
-- [ ] StatsOverviewWidget
-- [ ] RecentSubmissionsWidget
-- [ ] UpcomingExamsWidget
-- [ ] Navigation groups & icons
-- [ ] Scope data per guru (getEloquentQuery)
+## Migrations
 
-## Phase 4 — Roles & Security
-- [ ] Setup Spatie roles: `teacher`, `student`
-- [ ] Jalankan `shield:generate` untuk auto-generate permissions
-- [ ] Buat Policies untuk setiap model
-- [ ] Pastikan guru tidak bisa akses data guru lain
+- [ ] Update `users` table (uuid PK, is_active, last_login_at, last_login_ip, password_changed_at, soft delete)
+- [ ] Create `schools`
+- [ ] Create `teachers`
+- [ ] Create `students`
+- [ ] Create `subjects`
+- [ ] Create `classrooms`
+- [ ] Create `classroom_students` (pivot)
+- [ ] Create `classroom_subjects`
+- [ ] Create `materials`
+- [ ] Create `assignments`
+- [ ] Create `assignment_submissions`
+- [ ] Create `exams`
+- [ ] Create `exam_questions`
+- [ ] Create `exam_sessions`
+- [ ] Create `exam_answers`
 
-## Phase 5 — Seeder & Testing
-- [ ] UserFactory dengan role teacher/student
-- [ ] ClassroomSeeder (2–3 kelas dengan siswa)
-- [ ] MaterialSeeder, AssignmentSeeder, ExamSeeder
-- [ ] Manual test semua flow di browser
+---
 
-## Backlog (Fase Berikutnya — Sisi Siswa)
-- [ ] Auth siswa (register/login via Breeze)
-- [ ] Dashboard siswa (Inertia)
-- [ ] Halaman kelas siswa (materi, tugas, ujian)
-- [ ] Form pengumpulan tugas
-- [ ] Flow mengerjakan ujian (timer, auto-save)
-- [ ] Rekap nilai siswa
-- [ ] Sistem notifikasi (Laravel Notification)
+## Models
+
+- [ ] `User` — tambah fillable, casts, relationships, HasUuids, SoftDeletes
+- [ ] `Teacher`
+- [ ] `Student`
+- [ ] `School`
+- [ ] `Classroom`
+- [ ] `Subject`
+- [ ] `ClassroomSubject`
+- [ ] `Material`
+- [ ] `Assignment`
+- [ ] `AssignmentSubmission`
+- [ ] `Exam`
+- [ ] `ExamQuestion`
+- [ ] `ExamSession`
+- [ ] `ExamAnswer`
+
+---
+
+## Seeders
+
+- [ ] `RoleSeeder` — roles: super_admin, teacher, student (update yang ada)
+- [ ] `SchoolSeeder` — 1 dummy school
+- [ ] `UserSeeder` — 1 teacher + 1 student dummy
+- [ ] `SubjectSeeder` — beberapa mata pelajaran contoh
+
+---
+
+## Filament Panel
+
+- [ ] Pastikan `TeacherPanelProvider` atau `AdminPanelProvider` sudah register semua resource
+- [ ] Shield: `php artisan shield:generate --all`
+
+---
+
+## Filament Resources
+
+- [ ] `ClassroomResource`
+  - [ ] List + filter by teacher
+  - [ ] Create / Edit form
+  - [ ] `StudentsRelationManager`
+  - [ ] `ClassroomSubjectsRelationManager`
+- [ ] `MaterialResource`
+  - [ ] List + filter
+  - [ ] Create / Edit (text/file/link)
+  - [ ] Reorder
+- [ ] `AssignmentResource`
+  - [ ] List + filter
+  - [ ] Create / Edit + file upload
+  - [ ] `SubmissionsRelationManager` (nilai & feedback)
+- [ ] `ExamResource`
+  - [ ] List + filter
+  - [ ] Create / Edit + status management
+  - [ ] `QuestionsRelationManager` (CRUD soal + reorder)
+  - [ ] `SessionsRelationManager` (monitoring + manual grading)
+- [ ] `GradeResource`
+  - [ ] Rekap nilai tugas + ujian per siswa per kelas
+
+---
+
+## Filament Widgets (Dashboard)
+
+- [ ] `ClassroomStatsWidget`
+- [ ] `StudentStatsWidget`
+- [ ] `ActiveAssignmentWidget`
+- [ ] `UpcomingExamWidget`
+
+---
+
+## Policies
+
+- [ ] `ClassroomPolicy` — hanya teacher pemilik yang bisa edit/delete
+- [ ] `MaterialPolicy`
+- [ ] `AssignmentPolicy`
+- [ ] `ExamPolicy`

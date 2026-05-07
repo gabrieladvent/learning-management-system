@@ -2,42 +2,35 @@
 
 ## Stack
 
-| Layer | Package |
-|---|---|
-| Framework | Laravel 12 |
-| Admin Panel | Filament 3.3 |
-| Role & Permission | Spatie Laravel Permission + Filament Shield |
-| File Upload | Spatie Laravel Media Library |
-| Frontend (Siswa) | Inertia.js + Vue/React + Vite |
-| Auth Scaffolding | Laravel Breeze |
+- **Laravel 12** — backend framework
+- **Filament 3** — admin/teacher panel (primary UI)
+- **Spatie Laravel Permission** — role & permission management
+- **Filament Shield** — auto-generate permissions per Filament resource
+- **Spatie Laravel Media Library** — file attachment handling
+- **Inertia.js + React** — student-facing frontend (future phase)
 
-## Aktor
+## Roles
 
-| Aktor | Role Slug | Panel |
-|---|---|---|
-| Admin / Superadmin | `super_admin` | Filament (`/admin`) |
-| Guru | `teacher` | Filament (`/admin`) |
-| Siswa | `student` | Inertia (web) |
+| Role | Access |
+|------|--------|
+| `super_admin` | Full access to all panels |
+| `teacher` | Filament panel — manage kelas, materi, tugas, ujian, nilai |
+| `student` | Inertia/React frontend (future phase) |
 
-> Fase pertama: fokus pada **sisi Guru via Filament**. Sisi Siswa dibangun belakangan.
+## Global Conventions
 
-## Fitur Guru (Filament)
+- **UUID** — semua tabel menggunakan `uuid` sebagai primary key (`$table->uuid('id')->primary()`)
+- **Soft Delete** — semua tabel utama menggunakan `SoftDeletes`
+- **Timestamps** — semua tabel menggunakan `created_at` / `updated_at`
+- **Enum** — status/tipe disimpan sebagai PHP 8.1 backed enum di `app/Models/Enums/`
 
-| # | Fitur | Keterangan |
-|---|---|---|
-| 1 | Dashboard Ringkasan | Statistik kelas, siswa, tugas aktif, ujian mendatang |
-| 2 | Manajemen Kelas | Buat kelas, kelola siswa, kode join |
-| 3 | Materi Pembelajaran | Upload teks / file / link, urutkan per topik |
-| 4 | Tugas | Deadline, monitor pengumpulan, beri nilai & feedback |
-| 5 | Ujian Online | Soal pilihan ganda & esai, timer, auto-grade PG |
-| 6 | Rekap Nilai | Tabel rekap semua nilai per siswa |
-| 7 | Pengumuman | Broadcast ke kelas, auto-notifikasi siswa |
+## Development Phase (Current)
 
-## Urutan Pembangunan (Teacher Side)
+**Fase 1 — Teacher Dashboard (Filament)**
 
-1. Database & Migrations
-2. Models + Relationships
-3. Filament Resources (Classroom → Material → Assignment → Exam → Announcement)
-4. Filament Dashboard Widgets
-5. Policies & Filament Shield roles
-6. Seeder & Factory untuk testing
+1. Schema DB & migrasi
+2. Models + relationships
+3. Filament Resources: Classroom, Material, Assignment, Exam, Grade
+4. Filament Widgets: Dashboard stats
+
+**Fase 2 — Student Frontend (Inertia/React)** *(belum dimulai)*

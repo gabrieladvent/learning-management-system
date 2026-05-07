@@ -1,208 +1,156 @@
-# Filament Resources (Teacher Side)
+# Filament Resources — Teacher Dashboard
 
-Semua resource berada di namespace `App\Filament\Resources`.
-Panel Filament di-mount di path `/admin`.
-
----
-
-## 1. ClassroomResource
-
-**File:** `ClassroomResource.php`
-
-### Form Fields
-| Field | Widget | Keterangan |
-|---|---|---|
-| `name` | TextInput | Required |
-| `subject` | TextInput | Required |
-| `description` | Textarea | Optional |
-| `academic_year` | TextInput | Contoh: 2025/2026 |
-| `semester` | Select | 1 / 2 |
-| `is_active` | Toggle | Default true |
-| `code` | TextInput | Auto-generate, disabled |
-
-### Table Columns
-- name, subject, semester, academic_year, students_count, is_active (badge), created_at
-
-### Tabs / Relation Managers
-- **StudentsRelationManager** — daftar siswa enrolled, bisa attach/detach
-- **TopicsRelationManager** — daftar topik/pertemuan (CRUD inline)
-
-### Actions
-- `GenerateCode` — regenerate kode join
-- `CopyCode` — salin kode join ke clipboard
+Panel: `TeacherPanelProvider` (atau extend `AdminPanelProvider` dengan role guard).
 
 ---
 
-## 2. TopicResource *(atau hanya RelationManager)*
+## 1. Dashboard Widgets
 
-Topik dikelola langsung dari dalam `ClassroomResource` via **TopicsRelationManager**.
+Tampil di halaman utama Filament teacher.
 
-### Form Fields
-| Field | Widget |
-|---|---|
-| `title` | TextInput |
-| `description` | Textarea |
-| `order` | TextInput (number) |
+| Widget | Class | Data |
+|--------|-------|------|
+| Total Kelas | `ClassroomStatsWidget` | Jumlah kelas aktif yang diajar teacher login |
+| Total Siswa | `StudentStatsWidget` | Total siswa di semua kelas teacher |
+| Tugas Aktif | `ActiveAssignmentWidget` | Tugas dengan deadline belum lewat |
+| Ujian Mendatang | `UpcomingExamWidget` | Ujian dengan status published / starts_at > now |
+
+Semua widget di-scope ke `Auth::user()->teacher`.
+
+---
+
+## 2. ClassroomResource
+
+**Path:** `app/Filament/Resources/ClassroomResource.php`
+
+**Fitur:**
+- List kelas milik teacher (filter by `teacher_id`)
+- Create / edit kelas:
+  - Nama, grade level, academic year, status aktif
+  - Assign siswa (RelationManager `StudentsRelationManager`)
+  - Assign mata pelajaran + guru pengajar (`ClassroomSubjectsRelationManager`)
+- Soft delete
+
+**RelationManagers:**
+- `StudentsRelationManager` — attach/detach siswa ke kelas
+- `ClassroomSubjectsRelationManager` — tambah/edit classroom_subject (subject + teacher)
 
 ---
 
 ## 3. MaterialResource
 
-**File:** `MaterialResource.php`
+**Path:** `app/Filament/Resources/MaterialResource.php`
 
-### Form Fields
-| Field | Widget | Keterangan |
-|---|---|---|
-| `classroom_id` | Select | Hanya kelas milik guru login |
-| `topic_id` | Select | Dependent on classroom_id |
-| `title` | TextInput | |
-| `type` | Radio/Select | text / file / link |
-| `content` | RichEditor | Muncul jika type=text |
-| `url` | TextInput | Muncul jika type=link |
-| `file` | SpatieMediaLibraryFileUpload | Muncul jika type=file |
-| `order` | TextInput | |
-| `is_published` | Toggle | |
-| `published_at` | DateTimePicker | Auto-fill saat toggle |
-
-### Table Columns
-- title, classroom.name, topic.title, type (badge), is_published (badge), published_at
+**Fitur:**
+- List materi filter by classroom_subject yang diajar teacher login
+- Create / edit:
+  - Pilih classroom_subject
+  - Judul, deskripsi, topik, urutan
+  - Tipe: Text (RichEditor), File (SpatieMediaLibraryFileUpload), Link (URL input)
+  - Tanggal publish (bisa dijadwal)
+- Reorder materi (drag & drop dengan `$table->reorderable('order')`)
+- Soft delete
 
 ---
 
 ## 4. AssignmentResource
 
-**File:** `AssignmentResource.php`
+**Path:** `app/Filament/Resources/AssignmentResource.php`
 
-### Form Fields
-| Field | Widget |
-|---|---|
-| `classroom_id` | Select |
-| `topic_id` | Select (dependent) |
-| `title` | TextInput |
-| `description` | RichEditor |
-| `deadline` | DateTimePicker |
-| `max_score` | TextInput (number) |
-| `allow_late` | Toggle |
-| `is_published` | Toggle |
+**Fitur:**
+- List tugas filter by classroom_subject teacher
+- Create / edit:
+  - Pilih classroom_subject
+  - Judul, deskripsi (RichEditor)
+  - Deadline (DateTimePicker)
+  - Nilai maksimum
+  - Upload lampiran (SpatieMediaLibraryFileUpload)
+- Detail page → tab:
+  - **Submissions** (RelationManager): lihat siapa sudah/belum kumpul, nilai, feedback
+- Soft delete
 
-### Table Columns
-- title, classroom.name, deadline (color merah jika terlewat), submissions_count, is_published
-
-### Relation Managers
-- **SubmissionsRelationManager**
-  - Tabel: student name, submitted_at, is_late (badge), score, feedback
-  - Action inline: **GradeSubmission** — isi score + feedback
-  - Filter: Sudah dinilai / Belum dinilai / Terlambat
+**RelationManagers:**
+- `SubmissionsRelationManager` — beri nilai & feedback per siswa
 
 ---
 
 ## 5. ExamResource
 
-**File:** `ExamResource.php`
+**Path:** `app/Filament/Resources/ExamResource.php`
 
-### Form Fields
-| Field | Widget |
-|---|---|
-| `classroom_id` | Select |
-| `topic_id` | Select |
-| `title` | TextInput |
-| `description` | Textarea |
-| `duration_minutes` | TextInput (number) |
-| `start_time` | DateTimePicker |
-| `end_time` | DateTimePicker |
-| `is_published` | Toggle |
+**Fitur:**
+- List ujian filter by classroom_subject teacher
+- Create / edit ujian:
+  - Pilih classroom_subject
+  - Judul, deskripsi
+  - Tanggal mulai, durasi (menit)
+  - Shuffle questions toggle
+  - Status: draft → published → closed
+- RelationManager **QuestionsRelationManager**:
+  - Add soal: tipe, teks soal, opsi (JSON editor / repeater), jawaban benar, bobot
+  - Reorder soal
+  - Upload gambar soal (media library)
+- Detail page → tab **Sessions**: monitoring siapa sudah ikut, total skor
+- Auto-grading untuk `multiple_choice` saat submit
+- Manual grading essay: buka session → isi score & feedback per soal
 
-### Table Columns
-- title, classroom.name, duration, start_time, end_time, questions_count, sessions_count
-
-### Relation Managers
-
-#### QuestionsRelationManager
-Kelola soal langsung dari dalam halaman ujian.
-
-| Field | Widget | Keterangan |
-|---|---|---|
-| `type` | Select | multiple_choice / essay |
-| `question_text` | RichEditor | |
-| `points` | TextInput | |
-| `order` | TextInput | |
-
-Jika type=`multiple_choice`, muncul **OptionsRepeater**:
-- option_text (TextInput)
-- is_correct (Toggle, hanya satu yang bisa true)
-
-#### SessionsRelationManager
-Daftar siswa yang sudah mengerjakan: student name, started_at, finished_at, score, status.
-
-Action: **GradeEssay** — nilai jawaban esai per soal untuk satu sesi.
+**RelationManagers:**
+- `QuestionsRelationManager`
+- `SessionsRelationManager` — monitoring & manual grading
 
 ---
 
-## 6. AnnouncementResource
+## 6. GradeResource (Rekap Nilai)
 
-**File:** `AnnouncementResource.php`
+**Path:** `app/Filament/Resources/GradeResource.php`
 
-### Form Fields
-| Field | Widget | Keterangan |
-|---|---|---|
-| `classroom_id` | Select nullable | null = semua kelas guru |
-| `title` | TextInput | |
-| `content` | RichEditor | |
-| `published_at` | DateTimePicker | Jadwalkan publish |
-
-### Table Columns
-- title, classroom.name (atau "Semua Kelas"), published_at, created_at
-
-> Saat `published_at` tercapai, kirim Laravel Notification ke seluruh siswa di kelas terkait.
+**Fitur:**
+- Pilih kelas + mata pelajaran
+- Tampilkan rekap per siswa:
+  - Nilai tiap tugas
+  - Nilai tiap ujian
+  - Rata-rata
+- Edit nilai langsung dari tabel (inline)
+- Export ke Excel (optional — via `pxlrbt/filament-excel` atau malogisk/filament-excel)
 
 ---
 
-## 7. Dashboard Widgets
+## Scoping (Multi-tenancy Sederhana)
 
-### StatsOverviewWidget
-```
-[ Total Kelas Aktif ]  [ Total Siswa ]  [ Tugas Menunggu Penilaian ]  [ Ujian Berlangsung ]
-```
-
-### RecentSubmissionsWidget
-Tabel 5 pengumpulan tugas terbaru dari semua kelas guru.
-
-### UpcomingExamsWidget
-Daftar ujian yang akan dimulai dalam 7 hari ke depan.
-
----
-
-## Navigation Groups (Filament)
-
-```
-Dashboard
-  └── Dashboard (default)
-
-Kelas
-  └── Kelas Saya        (ClassroomResource)
-
-Konten Pembelajaran
-  ├── Materi            (MaterialResource)
-  ├── Tugas             (AssignmentResource)
-  └── Ujian             (ExamResource)
-
-Komunikasi
-  └── Pengumuman        (AnnouncementResource)
-```
-
----
-
-## Scope Data per Guru
-
-Setiap Resource harus menggunakan `EloquentQuery` yang difilter berdasarkan `auth()->id()` sebagai `teacher_id`, sehingga satu guru tidak bisa melihat data guru lain.
+Karena satu Filament panel dipakai semua teacher, setiap resource harus di-scope ke teacher yang login:
 
 ```php
 // Contoh di ClassroomResource
 public static function getEloquentQuery(): Builder
 {
     return parent::getEloquentQuery()
-        ->where('teacher_id', auth()->id());
+        ->where('teacher_id', auth()->user()->teacher->id);
 }
 ```
 
-Sama diterapkan di Material, Assignment, Exam, Announcement.
+Untuk `ClassroomSubject`-based resources (Material, Assignment, Exam):
+
+```php
+public static function getEloquentQuery(): Builder
+{
+    $teacherId = auth()->user()->teacher->id;
+    return parent::getEloquentQuery()
+        ->whereHas('classroomSubject', fn($q) => $q->where('teacher_id', $teacherId));
+}
+```
+
+---
+
+## Navigation Groups
+
+```
+- Dashboard
+- Kelas
+  - Daftar Kelas
+- Pembelajaran
+  - Materi
+  - Tugas
+  - Ujian
+- Penilaian
+  - Rekap Nilai
+```
