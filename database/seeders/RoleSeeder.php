@@ -8,36 +8,21 @@ use Spatie\Permission\Models\Role;
 
 class RoleSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Create Roles
-        $adminRole = Role::firstOrCreate([
-            'name' => 'super_admin',
-        ]);
+        Role::firstOrCreate(['name' => 'super_admin']);
+        Role::firstOrCreate(['name' => 'teacher']);
+        Role::firstOrCreate(['name' => 'student']);
 
-        $teacherRole = Role::firstOrCreate([
-            'name' => 'teacher',
-        ]);
-
-        $studentRole = Role::firstOrCreate([
-            'name' => 'student',
-        ]);
-
-        // Create Admin User
         $admin = User::firstOrCreate(
+            ['email' => 'admin@example.com'],
             [
-                'email' => 'admin@example.com',
-            ],
-            [
-                'name' => 'Administrator',
-                'password' => bcrypt('password'),
+                'name'      => 'Administrator',
+                'password'  => bcrypt('password'),
+                'is_active' => true,
             ]
         );
 
-        // Assign Role
-        $admin->assignRole($adminRole);
+        $admin->assignRole('super_admin');
     }
 }
