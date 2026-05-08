@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('students', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id');
+            $table->uuid('user_id')->nullable();
             $table->uuid('school_id');
             $table->string('nisn')->nullable()->unique();
             $table->string('full_name');
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+            $table->foreign('user_id')->references('id')->on('users')->nullOnDelete();
             $table->foreign('school_id')->references('id')->on('schools')->cascadeOnDelete();
         });
     }
