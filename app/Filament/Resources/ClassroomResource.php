@@ -91,21 +91,12 @@ class ClassroomResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                TextColumn::make('grade_level')
-                    ->label('Tingkat')
-                    ->sortable(),
-
                 TextColumn::make('academic_year')
                     ->label('Tahun Ajaran')
                     ->sortable(),
 
                 TextColumn::make('school.name')
                     ->label('Sekolah')
-                    ->searchable()
-                    ->toggleable(),
-
-                TextColumn::make('teacher.full_name')
-                    ->label('Wali Kelas')
                     ->searchable()
                     ->toggleable(),
 
