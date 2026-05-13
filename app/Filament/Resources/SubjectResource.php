@@ -34,6 +34,11 @@ class SubjectResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Mata Pelajaran';
 
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([

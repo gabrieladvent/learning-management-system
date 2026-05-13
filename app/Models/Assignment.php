@@ -18,19 +18,33 @@ class Assignment extends Model implements HasMedia
     use InteractsWithMedia;
     use SoftDeletes;
 
+    public const DEFAULT_FILE_TYPES = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'zip'];
+
     protected $fillable = [
-        'classroom_subject_id',
+        'material_id',
         'title',
         'description',
         'deadline',
         'max_score',
+        'order',
+        'allowed_file_types',
+        'max_file_size_mb',
+        'available_from',
+        'available_until',
+        'is_published',
     ];
 
     protected function casts(): array
     {
         return [
-            'deadline'  => 'datetime',
+            'deadline' => 'datetime',
             'max_score' => 'decimal:2',
+            'order' => 'integer',
+            'allowed_file_types' => 'array',
+            'max_file_size_mb' => 'integer',
+            'available_from' => 'datetime',
+            'available_until' => 'datetime',
+            'is_published' => 'boolean',
         ];
     }
 
@@ -39,9 +53,9 @@ class Assignment extends Model implements HasMedia
         $this->addMediaCollection('assignment_attachments');
     }
 
-    public function classroomSubject(): BelongsTo
+    public function material(): BelongsTo
     {
-        return $this->belongsTo(ClassroomSubject::class);
+        return $this->belongsTo(Material::class);
     }
 
     public function submissions(): HasMany

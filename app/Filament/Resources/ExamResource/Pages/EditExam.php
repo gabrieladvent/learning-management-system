@@ -1,15 +1,15 @@
 <?php
 
-namespace App\Filament\Resources\AssignmentResource\Pages;
+namespace App\Filament\Resources\ExamResource\Pages;
 
-use App\Filament\Resources\AssignmentResource;
+use App\Filament\Resources\ExamResource;
 use App\Filament\Resources\MaterialResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
-class EditAssignment extends EditRecord
+class EditExam extends EditRecord
 {
-    protected static string $resource = AssignmentResource::class;
+    protected static string $resource = ExamResource::class;
 
     protected function getRedirectUrl(): string
     {

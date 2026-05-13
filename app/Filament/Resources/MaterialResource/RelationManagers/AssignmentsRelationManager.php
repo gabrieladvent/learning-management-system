@@ -1,9 +1,8 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Resources\MaterialResource\RelationManagers;
 
-use App\Filament\Resources\AssignmentResource\Pages;
-use App\Filament\Resources\AssignmentResource\RelationManagers;
+use App\Filament\Resources\AssignmentResource;
 use App\Models\Assignment;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
@@ -13,45 +12,32 @@ use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
+use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
 use Filament\Tables\Actions\EditAction;
-use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
-class AssignmentResource extends Resource
+class AssignmentsRelationManager extends RelationManager
 {
-    protected static ?string $model = Assignment::class;
+    protected static string $relationship = 'assignments';
 
-    protected static bool $shouldRegisterNavigation = false;
+    protected static ?string $title = 'Tugas';
 
     protected static ?string $modelLabel = 'Tugas';
 
-    protected static ?string $pluralModelLabel = 'Tugas';
-
-    public static function getEloquentQuery(): Builder
+    public function isReadOnly(): bool
     {
-        $query = parent::getEloquentQuery()
-            ->with(['material.classroomSubject']);
-
-        $user = auth()->user();
-
-        if ($user?->hasRole('super_admin')) {
-            return $query;
-        }
-
-        if ($user?->teacher) {
-            return $query->whereHas('material.classroomSubject', fn ($q) => $q->where('teacher_id', $user->teacher->id));
-        }
-
-        return $query->whereRaw('1 = 0');
+        return false;
     }
 
-    public static function form(Form $form): Form
+    public function form(Form $form): Form
     {
         return $form->schema([
             Section::make('Informasi Tugas')->schema([
@@ -138,48 +124,62 @@ class AssignmentResource extends Resource
         ]);
     }
 
-    public static function table(Table $table): Table
+    public function table(Table $table): Table
     {
         return $table
+            ->recordTitleAttribute('title')
             ->columns([
-                TextColumn::make('material.classroomSubject.subject.name')
-                    ->label('Mata Pelajaran')
-                    ->searchable(),
-                TextColumn::make('material.title')
-                    ->label('Materi')
-                    ->searchable(),
+                TextColumn::make('order')
+                    ->label('#')
+                    ->alignCenter()
+                    ->width(50),
+
                 TextColumn::make('title')
-                    ->label('Judul Tugas')
-                    ->searchable(),
+                    ->label('Judul')
+                    ->searchable()
+                    ->sortable()
+                    ->wrap(),
+
                 TextColumn::make('deadline')
                     ->label('Deadline')
-                    ->dateTime('d M Y, H:i'),
+                    ->dateTime('d M Y, H:i')
+                    ->color(fn ($record) => $record->deadline?->isPast() ? 'danger' : 'success'),
+
+                TextColumn::make('max_score')
+                    ->label('Nilai Maks')
+                    ->alignCenter(),
+
                 IconColumn::make('is_published')
                     ->label('Publish')
                     ->boolean(),
+
+                TextColumn::make('submissions_count')
+                    ->label('Pengumpulan')
+                    ->counts('submissions')
+                    ->alignCenter(),
+            ])
+            ->defaultSort('order')
+            ->reorderable('order')
+            ->filters([
+                TernaryFilter::make('is_published')
+                    ->label('Status Publish'),
+            ])
+            ->headerActions([
+                CreateAction::make()->label('Tambah Tugas'),
             ])
             ->actions([
-                ViewAction::make(),
+                Action::make('manage')
+                    ->label('Kelola')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->url(fn ($record) => AssignmentResource::getUrl('edit', ['record' => $record])),
+
                 ActionGroup::make([
                     EditAction::make(),
                     DeleteAction::make(),
                 ]),
+            ])
+            ->bulkActions([
+                DeleteBulkAction::make(),
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            RelationManagers\SubmissionsRelationManager::class,
-        ];
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListAssignments::route('/'),
-            'edit' => Pages\EditAssignment::route('/{record}/edit'),
-            'view' => Pages\ViewAssignment::route('/{record}'),
-        ];
     }
 }

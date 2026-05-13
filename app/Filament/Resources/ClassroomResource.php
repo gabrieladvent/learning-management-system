@@ -31,13 +31,18 @@ class ClassroomResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-academic-cap';
 
-    protected static ?string $navigationGroup = 'Manajemen Kelas';
+    protected static ?string $navigationGroup = 'Master Data';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 10;
 
     protected static ?string $modelLabel = 'Kelas';
 
     protected static ?string $pluralModelLabel = 'Kelas';
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()?->hasRole('super_admin') ?? false;
+    }
 
     public static function form(Form $form): Form
     {

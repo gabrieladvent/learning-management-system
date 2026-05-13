@@ -1,19 +1,18 @@
 <?php
 
-namespace App\Filament\Resources\MaterialResource\Pages;
+namespace App\Filament\Resources\CourseResource\Pages;
 
 use App\Filament\Resources\CourseResource;
-use App\Filament\Resources\MaterialResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 
-class EditMaterial extends EditRecord
+class EditCourse extends EditRecord
 {
-    protected static string $resource = MaterialResource::class;
+    protected static string $resource = CourseResource::class;
 
     protected function getRedirectUrl(): string
     {
-        return CourseResource::getUrl('view', ['record' => $this->record->classroom_subject_id]);
+        return $this->getResource()::getUrl('index');
     }
 
     protected function getHeaderActions(): array
