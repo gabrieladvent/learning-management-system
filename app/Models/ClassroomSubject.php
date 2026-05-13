@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ClassroomSubject extends Model
@@ -47,16 +48,16 @@ class ClassroomSubject extends Model
 
     public function materials(): HasMany
     {
-        return $this->hasMany(Material::class);
+        return $this->hasMany(Material::class)->orderBy('order');
     }
 
-    public function assignments(): HasMany
+    public function assignments(): HasManyThrough
     {
-        return $this->hasMany(Assignment::class);
+        return $this->hasManyThrough(Assignment::class, Material::class);
     }
 
-    public function exams(): HasMany
+    public function exams(): HasManyThrough
     {
-        return $this->hasMany(Exam::class);
+        return $this->hasManyThrough(Exam::class, Material::class);
     }
 }

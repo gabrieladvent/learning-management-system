@@ -17,27 +17,35 @@ class Exam extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'classroom_subject_id',
+        'material_id',
         'title',
         'description',
         'starts_at',
         'duration_minutes',
         'shuffle_questions',
         'status',
+        'order',
+        'available_from',
+        'available_until',
+        'is_published',
     ];
 
     protected function casts(): array
     {
         return [
-            'starts_at'         => 'datetime',
+            'starts_at' => 'datetime',
             'shuffle_questions' => 'boolean',
-            'status'            => ExamStatusEnum::class,
+            'status' => ExamStatusEnum::class,
+            'order' => 'integer',
+            'available_from' => 'datetime',
+            'available_until' => 'datetime',
+            'is_published' => 'boolean',
         ];
     }
 
-    public function classroomSubject(): BelongsTo
+    public function material(): BelongsTo
     {
-        return $this->belongsTo(ClassroomSubject::class);
+        return $this->belongsTo(Material::class);
     }
 
     public function questions(): HasMany

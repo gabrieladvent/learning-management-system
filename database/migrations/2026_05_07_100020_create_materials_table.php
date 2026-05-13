@@ -13,11 +13,13 @@ return new class extends Migration
             $table->uuid('classroom_subject_id');
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('type')->default('text');
             $table->longText('content')->nullable();
+            $table->string('link_url')->nullable();
             $table->string('topic')->nullable();
             $table->integer('order')->default(0);
-            $table->timestamp('published_at')->nullable();
+            $table->timestamp('available_from')->nullable();
+            $table->timestamp('available_until')->nullable();
+            $table->boolean('is_published')->default(false);
             $table->timestamps();
             $table->softDeletes();
 
