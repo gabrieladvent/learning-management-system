@@ -32,7 +32,7 @@ class Teacher extends Model
     {
         return [
             'birth_date' => 'date',
-            'gender'     => GenderEnum::class,
+            'gender' => GenderEnum::class,
         ];
     }
 

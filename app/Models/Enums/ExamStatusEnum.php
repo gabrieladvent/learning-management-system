@@ -4,25 +4,25 @@ namespace App\Models\Enums;
 
 enum ExamStatusEnum: string
 {
-    case Draft     = 'draft';
+    case Draft = 'draft';
     case Published = 'published';
-    case Closed    = 'closed';
+    case Closed = 'closed';
 
     public function label(): string
     {
-        return match($this) {
-            self::Draft     => 'Draft',
+        return match ($this) {
+            self::Draft => 'Draft',
             self::Published => 'Dipublikasikan',
-            self::Closed    => 'Ditutup',
+            self::Closed => 'Ditutup',
         };
     }
 
     public function color(): string
     {
-        return match($this) {
-            self::Draft     => 'gray',
+        return match ($this) {
+            self::Draft => 'gray',
             self::Published => 'success',
-            self::Closed    => 'danger',
+            self::Closed => 'danger',
         };
     }
 }

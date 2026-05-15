@@ -17,8 +17,8 @@ class RoleSeeder extends Seeder
         $admin = User::firstOrCreate(
             ['email' => 'admin@example.com'],
             [
-                'name'      => 'Administrator',
-                'password'  => bcrypt('password'),
+                'name' => 'Administrator',
+                'password' => bcrypt('password'),
                 'is_active' => true,
             ]
         );

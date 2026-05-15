@@ -1,6 +1,9 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\Filament\TeacherPanelProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\Filament\TeacherPanelProvider::class,
+    AppServiceProvider::class,
+    TeacherPanelProvider::class,
 ];

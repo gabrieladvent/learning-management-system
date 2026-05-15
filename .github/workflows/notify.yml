@@ -1,0 +1,179 @@
+name: Notify
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+permissions:
+  checks: read
+  contents: read
+
+jobs:
+  telegram:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true || github.event.action != 'closed'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for other workflows
+        uses: lewagon/wait-on-check-action@v1.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          running-workflow-name: 'telegram'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 10
+          allowed-conclusions: success,failure,cancelled,skipped
+
+      - name: Get workflow results
+        id: results
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: checkRuns } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.pull_request.head.sha
+            });
+
+            const workflows = checkRuns.check_runs.filter(run =>
+              ['Lint', 'Build', 'check-source'].some(name => run.name.includes(name)) &&
+              !run.name.includes('telegram') &&
+              !run.name.includes('Notify')
+            );
+
+            const allSuccess = workflows.every(w => w.conclusion === 'success');
+            const anyFailure = workflows.some(w => w.conclusion === 'failure');
+
+            let conclusion = 'success';
+            let checkEmoji = '✅';
+            let details = '';
+
+            if (anyFailure) {
+              conclusion = 'failure';
+              checkEmoji = '❌';
+              const failed = workflows.filter(w => w.conclusion === 'failure');
+              details = failed.map(w => `❌ <code>${w.name}</code>`).join('\n');
+            } else if (!allSuccess) {
+              conclusion = 'pending';
+              checkEmoji = '⚠️';
+              const nonSuccess = workflows.filter(w => w.conclusion !== 'success');
+              details = nonSuccess.map(w => `⚠️ <code>${w.name}</code> (${w.conclusion})`).join('\n');
+            } else {
+              details = workflows.map(w => `✅ <code>${w.name}</code>`).join('\n');
+            }
+
+            core.setOutput('conclusion', conclusion);
+            core.setOutput('check_emoji', checkEmoji);
+            core.setOutput('count', workflows.length);
+            core.setOutput('details', details);
+
+      - name: Build message per event
+        id: msg
+        run: |
+          ACTION="${{ github.event.action }}"
+          MERGED="${{ github.event.pull_request.merged }}"
+          PR_NUM="${{ github.event.pull_request.number }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          HEAD="${{ github.event.pull_request.head.ref }}"
+          BASE="${{ github.event.pull_request.base.ref }}"
+          COMMITS="${{ github.event.pull_request.commits }}"
+          REPO="${{ github.repository }}"
+          CHECKS="${{ steps.results.outputs.count }}"
+          STATUS="${{ steps.results.outputs.conclusion }}"
+          CHECK_EMOJI="${{ steps.results.outputs.check_emoji }}"
+          DETAILS="${{ steps.results.outputs.details }}"
+
+          CHECKS_SECTION=""
+          if [ -n "$DETAILS" ]; then
+            CHECKS_SECTION="
+          🔍 <b>Checks (${CHECKS}):</b>
+          ${DETAILS}"
+          fi
+
+          if [ "$MERGED" == "true" ]; then
+            MESSAGE="🎉 <b>PR Merged in LMS Web!</b>
+          ━━━━━━━━━━━━━━━━━━━━
+          📌 <b>PR #${PR_NUM}</b> — ${PR_TITLE}
+
+          👤 Author   : @${AUTHOR}
+          🌿 Branch   : <code>${HEAD}</code> → <code>${BASE}</code>
+          📦 Repo     : <code>${REPO}</code>
+          🔢 Commits  : ${COMMITS} commit(s)
+          ${CHECK_EMOJI} CI      : ${STATUS} (${CHECKS} checks)
+          ${CHECKS_SECTION}
+          ━━━━━━━━━━━━━━━━━━━━
+          ✨ Changes landed on <code>${BASE}</code>!
+          🔗 <a href=\"${PR_URL}\">View Pull Request</a>"
+
+          elif [ "$ACTION" == "opened" ]; then
+            MESSAGE="🚀 <b>New PR Opened in LMS Web!</b>
+          ━━━━━━━━━━━━━━━━━━━━
+          📝 <b>PR #${PR_NUM}</b> — ${PR_TITLE}
+
+          👤 Author   : @${AUTHOR}
+          🌿 Branch   : <code>${HEAD}</code> → <code>${BASE}</code>
+          📦 Repo     : <code>${REPO}</code>
+          🔢 Commits  : ${COMMITS} commit(s)
+
+          ━━━━━━━━━━━━━━━━━━━━
+          👀 Needs review — let's go!
+          🔗 <a href=\"${PR_URL}\">View Pull Request</a>"
+
+          elif [ "$ACTION" == "synchronize" ]; then
+            MESSAGE="🔄 <b>PR Updated in LMS Web!</b>
+          ━━━━━━━━━━━━━━━━━━━━
+          📝 <b>PR #${PR_NUM}</b> — ${PR_TITLE}
+
+          👤 Author   : @${AUTHOR}
+          🌿 Branch   : <code>${HEAD}</code> → <code>${BASE}</code>
+          📦 Repo     : <code>${REPO}</code>
+          🔢 Commits  : ${COMMITS} commit(s)
+          ${CHECK_EMOJI} CI      : ${STATUS} (${CHECKS} checks)
+          ${CHECKS_SECTION}
+          ━━━━━━━━━━━━━━━━━━━━
+          ⚡ New push detected, checks running...
+          🔗 <a href=\"${PR_URL}\">View Pull Request</a>"
+
+          elif [ "$ACTION" == "reopened" ]; then
+            MESSAGE="♻️ <b>PR Reopened in LMS Web!</b>
+          ━━━━━━━━━━━━━━━━━━━━
+          📝 <b>PR #${PR_NUM}</b> — ${PR_TITLE}
+
+          👤 Author   : @${AUTHOR}
+          🌿 Branch   : <code>${HEAD}</code> → <code>${BASE}</code>
+          📦 Repo     : <code>${REPO}</code>
+          🔢 Commits  : ${COMMITS} commit(s)
+
+          ━━━━━━━━━━━━━━━━━━━━
+          🙌 Back in action!
+          🔗 <a href=\"${PR_URL}\">View Pull Request</a>"
+
+          else
+            MESSAGE="🚫 <b>PR Closed in LMS Web</b>
+          ━━━━━━━━━━━━━━━━━━━━
+          📝 <b>PR #${PR_NUM}</b> — ${PR_TITLE}
+
+          👤 Author   : @${AUTHOR}
+          🌿 Branch   : <code>${HEAD}</code> → <code>${BASE}</code>
+          📦 Repo     : <code>${REPO}</code>
+
+          ━━━━━━━━━━━━━━━━━━━━
+          ❌ Closed without merging.
+          🔗 <a href=\"${PR_URL}\">View Pull Request</a>"
+          fi
+
+          echo "text<<EOF" >> $GITHUB_OUTPUT
+          echo "$MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Send Telegram Notification
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: ${{ steps.msg.outputs.text }}

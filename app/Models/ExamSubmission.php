@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
-class AssignmentSubmission extends Model implements HasMedia
+class ExamSubmission extends Model implements HasMedia
 {
     use HasFactory;
     use HasUuids;
@@ -18,9 +18,10 @@ class AssignmentSubmission extends Model implements HasMedia
     use SoftDeletes;
 
     protected $fillable = [
-        'assignment_id',
+        'exam_id',
         'student_id',
         'content',
+        'link_url',
         'submitted_at',
         'score',
         'feedback',
@@ -39,9 +40,9 @@ class AssignmentSubmission extends Model implements HasMedia
         $this->addMediaCollection('submission_files');
     }
 
-    public function assignment(): BelongsTo
+    public function exam(): BelongsTo
     {
-        return $this->belongsTo(Assignment::class);
+        return $this->belongsTo(Exam::class);
     }
 
     public function student(): BelongsTo
