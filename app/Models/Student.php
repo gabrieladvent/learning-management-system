@@ -33,8 +33,8 @@ class Student extends Model
     {
         return [
             'birth_date' => 'date',
-            'gender'     => GenderEnum::class,
-            'is_active'  => 'boolean',
+            'gender' => GenderEnum::class,
+            'is_active' => 'boolean',
         ];
     }
 

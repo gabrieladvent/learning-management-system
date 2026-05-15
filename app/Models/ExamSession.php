@@ -24,9 +24,9 @@ class ExamSession extends Model
     protected function casts(): array
     {
         return [
-            'started_at'   => 'datetime',
+            'started_at' => 'datetime',
             'submitted_at' => 'datetime',
-            'total_score'  => 'decimal:2',
+            'total_score' => 'decimal:2',
         ];
     }
 

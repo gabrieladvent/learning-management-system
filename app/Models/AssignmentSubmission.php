@@ -30,7 +30,7 @@ class AssignmentSubmission extends Model implements HasMedia
     {
         return [
             'submitted_at' => 'datetime',
-            'score'        => 'decimal:2',
+            'score' => 'decimal:2',
         ];
     }
 
