@@ -30,11 +30,20 @@ class ExamQuestion extends Model implements HasMedia
     protected function casts(): array
     {
         return [
-            'type'    => QuestionTypeEnum::class,
+            'type' => QuestionTypeEnum::class,
             'options' => 'array',
-            'score'   => 'decimal:2',
-            'order'   => 'integer',
+            'score' => 'decimal:2',
+            'order' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $question) {
+            if (empty($question->order)) {
+                $question->order = (static::where('exam_id', $question->exam_id)->max('order') ?? 0) + 1;
+            }
+        });
     }
 
     public function registerMediaCollections(): void

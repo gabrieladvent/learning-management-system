@@ -48,6 +48,15 @@ class Assignment extends Model implements HasMedia
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $assignment) {
+            if (empty($assignment->order)) {
+                $assignment->order = (static::where('material_id', $assignment->material_id)->max('order') ?? 0) + 1;
+            }
+        });
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('assignment_attachments');

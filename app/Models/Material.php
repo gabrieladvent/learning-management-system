@@ -41,6 +41,15 @@ class Material extends Model implements HasMedia
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $material) {
+            if (empty($material->order)) {
+                $material->order = (static::where('classroom_subject_id', $material->classroom_subject_id)->max('order') ?? 0) + 1;
+            }
+        });
+    }
+
     public function registerMediaCollections(): void
     {
         $this->addMediaCollection('material_files');
