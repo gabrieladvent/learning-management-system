@@ -365,6 +365,7 @@ class ExamResource extends Resource
     {
         return [
             RelationManagers\QuestionsRelationManager::class,
+            RelationManagers\SessionsRelationManager::class,
             RelationManagers\SubmissionsRelationManager::class,
         ];
     }
