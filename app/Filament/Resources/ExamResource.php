@@ -17,6 +17,10 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\Section as InfolistSection;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\DeleteAction;
@@ -168,6 +172,149 @@ class ExamResource extends Resource
                     ->label('Berhenti Tampil')
                     ->native(false),
             ])->columns(3),
+        ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist->schema([
+            InfolistSection::make('Informasi Ujian')
+                ->icon('heroicon-o-clipboard-document-check')
+                ->schema([
+                    TextEntry::make('title')
+                        ->label('Judul Ujian')
+                        ->size(TextEntry\TextEntrySize::Large)
+                        ->weight('bold')
+                        ->columnSpanFull(),
+
+                    TextEntry::make('material.classroomSubject.classroom.name')
+                        ->label('Kelas')
+                        ->icon('heroicon-o-academic-cap'),
+
+                    TextEntry::make('material.classroomSubject.subject.name')
+                        ->label('Mata Pelajaran')
+                        ->icon('heroicon-o-book-open'),
+
+                    TextEntry::make('material.title')
+                        ->label('Materi Terkait')
+                        ->icon('heroicon-o-document-text')
+                        ->columnSpanFull(),
+
+                    TextEntry::make('description')
+                        ->label('Deskripsi / Petunjuk')
+                        ->html()
+                        ->placeholder('—')
+                        ->columnSpanFull(),
+                ])->columns(2),
+
+            InfolistSection::make('Mode & Pengaturan Ujian')
+                ->icon('heroicon-o-cog-6-tooth')
+                ->schema([
+                    TextEntry::make('mode')
+                        ->label('Mode Ujian')
+                        ->badge()
+                        ->formatStateUsing(fn ($state) => $state?->label())
+                        ->icon(fn ($state) => $state?->icon())
+                        ->color(fn ($state) => match ($state) {
+                            ExamModeEnum::OnlineQuiz => 'info',
+                            ExamModeEnum::Submission => 'warning',
+                            default => 'gray',
+                        }),
+
+                    TextEntry::make('status')
+                        ->label('Status Lifecycle')
+                        ->badge()
+                        ->formatStateUsing(fn ($state) => $state?->label())
+                        ->color(fn ($state) => $state?->color()),
+
+                    IconEntry::make('shuffle_questions')
+                        ->label('Acak Soal')
+                        ->boolean()
+                        ->visible(fn ($record) => $record->mode === ExamModeEnum::OnlineQuiz),
+                ])->columns(3),
+
+            InfolistSection::make('Jadwal & Penilaian')
+                ->icon('heroicon-o-calendar-days')
+                ->schema([
+                    TextEntry::make('starts_at')
+                        ->label('Waktu Mulai')
+                        ->dateTime('d M Y, H:i')
+                        ->icon('heroicon-o-clock'),
+
+                    TextEntry::make('duration_minutes')
+                        ->label('Durasi')
+                        ->suffix(' menit')
+                        ->icon('heroicon-o-clock'),
+
+                    TextEntry::make('max_score')
+                        ->label('Nilai Maksimal')
+                        ->numeric()
+                        ->suffix(' poin')
+                        ->icon('heroicon-o-star'),
+                ])->columns(3),
+
+            InfolistSection::make('Aturan Pengumpulan')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->visible(fn ($record) => $record->mode === ExamModeEnum::Submission)
+                ->schema([
+                    TextEntry::make('allowed_file_types')
+                        ->label('Tipe File yang Diizinkan')
+                        ->badge()
+                        ->separator(',')
+                        ->color('info')
+                        ->placeholder('—'),
+
+                    TextEntry::make('max_file_size_mb')
+                        ->label('Maksimal Ukuran File')
+                        ->suffix(' MB / file')
+                        ->icon('heroicon-o-document'),
+                ])->columns(2),
+
+            InfolistSection::make('Ringkasan Soal & Sesi')
+                ->icon('heroicon-o-chart-bar')
+                ->schema([
+                    TextEntry::make('questions_count')
+                        ->label('Jumlah Soal')
+                        ->state(fn ($record) => $record->questions()->count().' soal')
+                        ->icon('heroicon-o-list-bullet')
+                        ->visible(fn ($record) => $record->mode === ExamModeEnum::OnlineQuiz),
+
+                    TextEntry::make('sessions_count')
+                        ->label('Sesi Pengerjaan')
+                        ->state(fn ($record) => $record->sessions()->count().' siswa')
+                        ->icon('heroicon-o-users')
+                        ->visible(fn ($record) => $record->mode === ExamModeEnum::OnlineQuiz),
+
+                    TextEntry::make('submissions_count')
+                        ->label('Pengumpulan')
+                        ->state(fn ($record) => $record->submissions()->count().' siswa')
+                        ->icon('heroicon-o-inbox-arrow-down')
+                        ->visible(fn ($record) => $record->mode === ExamModeEnum::Submission),
+                ])->columns(3),
+
+            InfolistSection::make('Status & Jadwal Tayang')
+                ->icon('heroicon-o-eye')
+                ->schema([
+                    IconEntry::make('is_published')
+                        ->label('Status Publish')
+                        ->boolean()
+                        ->trueIcon('heroicon-o-check-circle')
+                        ->falseIcon('heroicon-o-x-circle')
+                        ->trueColor('success')
+                        ->falseColor('danger'),
+
+                    TextEntry::make('available_from')
+                        ->label('Mulai Tampil')
+                        ->dateTime('d M Y, H:i')
+                        ->placeholder('Langsung saat publish')
+                        ->icon('heroicon-o-calendar'),
+
+                    TextEntry::make('available_until')
+                        ->label('Berhenti Tampil')
+                        ->dateTime('d M Y, H:i')
+                        ->placeholder('Tanpa batas')
+                        ->icon('heroicon-o-calendar'),
+                ])->columns(3),
         ]);
     }
 
