@@ -1,12 +1,11 @@
 import { Head, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { BookMarked, ClipboardList, FileSpreadsheet } from 'lucide-react';
-import { CourseCard, HeroGreeting } from '@/features/Dashboard/components';
-import { DashboardPageProps } from '@/features/Dashboard/types';
-import { EmptyState } from '@/shared/components';
-import { StudentLayout } from '@/shared/layouts';
-import { staggerContainer } from '@/shared/lib';
-import { PageProps } from '@/shared/types';
+import { CourseCard, DashboardPageProps, HeroGreeting } from '@/Components/Dashboard';
+import { EmptyState } from '@/Components';
+import { StudentLayout } from '@/Layouts';
+import { staggerContainer } from '@/lib';
+import { PageProps } from '@/types';
 
 export default function Dashboard() {
     const { props } = usePage<PageProps<DashboardPageProps>>();

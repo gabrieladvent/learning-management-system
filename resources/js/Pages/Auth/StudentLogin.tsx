@@ -2,7 +2,7 @@ import { Head, useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { BookOpen, Eye, EyeOff, IdCard, KeyRound, Loader2 } from 'lucide-react';
 import { FormEvent, useState } from 'react';
-import { toast, useFlashToast } from '@/shared/lib';
+import { toast, useFlashToast } from '@/lib';
 
 type FormData = {
     nisn: string;

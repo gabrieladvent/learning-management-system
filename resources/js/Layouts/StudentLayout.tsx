@@ -2,8 +2,8 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { BookOpen, LogOut } from 'lucide-react';
 import { PropsWithChildren } from 'react';
-import { PageProps } from '@/shared/types';
-import { pageTransition, useFlashToast } from '@/shared/lib';
+import { PageProps } from '@/types';
+import { pageTransition, useFlashToast } from '@/lib';
 
 interface Props {
     title?: string;
