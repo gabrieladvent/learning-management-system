@@ -71,13 +71,13 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
 4. **Layout & UI** (Tailwind + Framer Motion) — lihat section "Struktur Folder Frontend"
    - `resources/js/Pages/Auth/StudentLogin.tsx` — login form di-center, card tipis `max-w-md`
    - `resources/js/Pages/Dashboard/Dashboard.tsx` — landing page dengan hero + grid course
-   - `resources/js/shared/layouts/StudentLayout.tsx` — topbar minimalis (logo kiri, nama siswa + logout kanan)
-   - `resources/js/features/Dashboard/components/{CourseCard,HeroGreeting}.tsx` — komponen khusus dashboard
-   - `resources/js/features/Dashboard/helpers/subjects.ts` — peta mapel → icon + warna
-   - `resources/js/features/Dashboard/types/dashboard.type.ts` — `Course`, `DashboardPageProps`
-   - `resources/js/shared/components/EmptyState.tsx` — empty state generic
-   - `resources/js/shared/lib/motion.ts` — shared motion variants (`fadeUp`, `staggerContainer`, `cardHover`, `pageTransition`)
-   - `resources/js/shared/lib/toast.tsx` + `useFlashToast.ts` — sonner wrapper + auto-toast dari flash session
+   - `resources/js/Layouts/StudentLayout.tsx` — topbar minimalis (logo kiri, nama siswa + logout kanan)
+   - `resources/js/Components/Dashboard/{CourseCard,HeroGreeting}.tsx` — komponen khusus dashboard
+   - `resources/js/Components/Dashboard/subjects.ts` — peta mapel → icon + warna (co-located)
+   - `resources/js/Components/Dashboard/dashboard.type.ts` — `Course`, `DashboardPageProps`
+   - `resources/js/Components/EmptyState.tsx` — empty state generic
+   - `resources/js/lib/motion.ts` — motion variants (`fadeUp`, `staggerContainer`, `cardHover`, `pageTransition`)
+   - `resources/js/lib/toast.tsx` + `useFlashToast.ts` — sonner wrapper + auto-toast dari flash session
 
 5. **Dashboard isi:**
    - **Greeting**: "Halo, [Nama]" — fade-in dari atas, font besar `text-2xl font-semibold`
@@ -362,38 +362,17 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
 
 ---
 
-## Struktur Folder Frontend — Pages + Feature-Folder
+## Struktur Folder Frontend
 
-Pakai **3 top-level folder**:
+Ikut convention Laravel Breeze persis — top-level folder by-type (`Pages/`, `Components/`, `Layouts/`, `lib/`, `types/`). Fitur di-group sebagai **subfolder dalam `Components/`** ketika punya banyak komponen sendiri. Tidak ada `features/`, tidak ada `shared/`.
 
-- **`Pages/`** — semua Inertia page (convention standar Laravel/Inertia). Inertia resolver default tetap dipakai: `Inertia::render('Auth/StudentLogin')` → `Pages/Auth/StudentLogin.tsx`.
-- **`features/<Feature>/`** — supporting code per fitur: `components/`, `types/`, `hooks/`, `helpers/`, `repositories/`. **TIDAK** memuat `pages/`.
-- **`shared/`** — cross-feature: `layouts/`, `lib/`, `components/`, `types/`.
-
-### Aturan utama
-
-1. **Pages selalu di `resources/js/Pages/<Subdir>/<Page>.tsx`.** Subdir biasanya match nama feature (mis. `Pages/Dashboard/Dashboard.tsx` ↔ `features/Dashboard/`).
-2. **Buat folder `features/<X>/` hanya kalau ada supporting code.** Kalau page-nya cuma stand-alone tanpa komponen/type khusus (mis. `Pages/Auth/StudentLogin.tsx`), tidak perlu `features/Auth/` sama sekali.
-3. **Co-location > grouping by type.** Komponen khusus dashboard tinggal di `features/Dashboard/components/`, bukan di global `components/`.
-4. **Promote saat dipakai 2+ fitur.** Mulai semua di `features/<X>/`. Begitu dipakai fitur lain → pindah ke `shared/`.
-5. **Buat subfolder hanya saat butuh.** Jangan pre-create `hooks/`, `helpers/`, `repositories/`, `types/` kosong. Tambahkan saat ada file pertama yang masuk.
-6. **Setiap subfolder yang berisi file punya `index.ts` (barrel).** Konsumen import dari folder, bukan file: `import { CourseCard } from '@/features/Dashboard/components'`.
-7. **Naming:**
-   - Folder feature: **PascalCase** (mengikuti convention Inertia `Pages/Auth/`) → `Auth/`, `Dashboard/`, `Assignment/`, `Exam/`
-   - Subfolder: **lowercase** → `components/`, `hooks/`, `helpers/`, `repositories/`, `types/`
-   - File komponen: **PascalCase.tsx** → `CourseCard.tsx`
-   - File types: `<feature>.type.ts` → `dashboard.type.ts`
-   - File helpers/hooks/repositories: **camelCase.ts** → `subjects.ts`, `useExamTimer.ts`, `assignmentRepository.ts`
-
-### Layout target (setelah semua fase selesai)
-
-Catatan: ini hanya **target** — folder hanya dibuat saat ada file pertamanya. `features/Auth/` misalnya tidak ada karena login page tidak punya supporting code.
+### Layout
 
 ```
 resources/js/
 ├── app.tsx                            ← Inertia bootstrap (resolver default)
 ├── bootstrap.ts
-├── Pages/                             ← SEMUA Inertia page (convention standar)
+├── Pages/                             ← Inertia page (entry points)
 │   ├── Auth/
 │   │   └── StudentLogin.tsx           ← Phase 1
 │   ├── Dashboard/
@@ -409,113 +388,93 @@ resources/js/
 │       ├── ExamTake.tsx
 │       ├── ExamResult.tsx
 │       └── ExamSubmissionForm.tsx
-├── shared/                            ← cross-feature
-│   ├── components/
-│   │   ├── EmptyState.tsx
-│   │   ├── MathContent.tsx            (KaTeX) — Phase 2
-│   │   ├── FileCard.tsx               (download) — Phase 2
-│   │   ├── CountdownTimer.tsx         — Phase 4
+├── Components/                        ← komponen reusable
+│   ├── EmptyState.tsx                 ← cross-cutting (top-level)
+│   ├── MathContent.tsx                ← Phase 2 (cross-cutting)
+│   ├── FileCard.tsx                   ← Phase 2 (cross-cutting)
+│   ├── CountdownTimer.tsx             ← Phase 4 (cross-cutting)
+│   ├── Dashboard/                     ← Phase 1 (komponen + helper + types khusus dashboard)
+│   │   ├── CourseCard.tsx
+│   │   ├── HeroGreeting.tsx
+│   │   ├── subjects.ts                (peta MTK/FIS/dll → icon + warna)
+│   │   ├── dashboard.type.ts          (Course, DashboardMeta, DashboardPageProps)
+│   │   └── index.ts                   (barrel re-export)
+│   ├── Assignment/                    ← Phase 3
+│   │   ├── SubmissionForm.tsx
+│   │   ├── FilePicker.tsx
+│   │   ├── assignment.type.ts
 │   │   └── index.ts
-│   ├── layouts/
-│   │   ├── StudentLayout.tsx
-│   │   └── index.ts
-│   ├── lib/
-│   │   ├── motion.ts                  (fadeUp, stagger, pageTransition)
-│   │   ├── toast.tsx                  (sonner wrapper + AppToaster)
-│   │   ├── useFlashToast.ts
-│   │   ├── api.ts                     (axios setup)
-│   │   └── index.ts
-│   └── types/
-│       ├── index.d.ts                 (PageProps, FlashMessages, User, Student)
-│       └── global.d.ts                (window.axios, ziggy route)
-└── features/                          ← supporting code (NO pages)
-    ├── Dashboard/                     ← Phase 1
-    │   ├── components/
-    │   │   ├── CourseCard.tsx
-    │   │   ├── HeroGreeting.tsx
-    │   │   └── index.ts
-    │   ├── helpers/
-    │   │   ├── subjects.ts            (peta MTK/FIS/dll → icon + warna)
-    │   │   └── index.ts
-    │   └── types/
-    │       ├── dashboard.type.ts      (Course, DashboardMeta, DashboardPageProps)
-    │       └── index.ts
-    ├── Course/                        ← Phase 2
-    │   ├── components/
-    │   └── types/course.type.ts
-    ├── Material/                      ← Phase 2
-    │   ├── components/
-    │   └── types/
-    ├── Assignment/                    ← Phase 3
-    │   ├── components/                (SubmissionForm, FilePicker, dll)
-    │   ├── repositories/              (submitAssignment, dll)
-    │   └── types/
-    │       ├── assignment.type.ts
-    │       ├── requests.ts            (SubmitAssignmentRequest)
-    │       └── responses.ts
-    └── Exam/                          ← Phase 4
-        ├── components/                (QuestionNavigator, ExamTimer, dll)
-        ├── hooks/                     (useExamTimer, useAutoSave)
-        ├── repositories/
-        ├── enums/                     (QuestionType, SessionStatus)
-        └── types/
-            ├── exam.type.ts
-            ├── requests.ts
-            └── responses.ts
+│   └── Exam/                          ← Phase 4
+│       ├── QuestionNavigator.tsx
+│       ├── ExamTimer.tsx
+│       ├── useExamTimer.ts            (hook, co-located)
+│       ├── exam.type.ts
+│       └── index.ts
+├── Layouts/
+│   ├── StudentLayout.tsx              ← yang kita pakai
+│   ├── AuthenticatedLayout.tsx        (breeze, legacy)
+│   ├── GuestLayout.tsx                (breeze, legacy)
+│   └── index.ts                       (barrel — export StudentLayout)
+├── lib/                               ← framework/utility code (cross-cutting)
+│   ├── motion.ts                      (fadeUp, stagger, pageTransition)
+│   ├── toast.tsx                      (sonner wrapper + AppToaster)
+│   ├── useFlashToast.ts               (auto-toast dari Inertia flash)
+│   ├── api.ts                         (axios setup) — Phase 3+
+│   └── index.ts                       (barrel)
+└── types/                             ← global TS types
+    ├── index.d.ts                     (PageProps, FlashMessages, User, Student)
+    ├── global.d.ts                    (window.axios, ziggy route)
+    └── vite-env.d.ts
 ```
+
+### Aturan utama
+
+1. **Pages = entry points Inertia, di `Pages/<Feature>/<Page>.tsx`.** Subdir biasanya match nama feature (mis. `Pages/Dashboard/Dashboard.tsx`).
+2. **Komponen reusable di `Components/`.** Kalau cross-cutting (mis. `EmptyState`) → langsung top-level. Kalau khusus fitur → masuk subfolder PascalCase (mis. `Components/Dashboard/`).
+3. **Co-located helpers & types** di samping komponen yang pakai (mis. `Components/Dashboard/subjects.ts` + `dashboard.type.ts`). Tidak ada `Helpers/` atau `Types/` per-fitur.
+4. **`lib/`** untuk utilitas cross-cutting yang **bukan komponen** (Framer Motion variants, sonner wrapper, axios setup, hooks generik). Lowercase, mengikuti breeze.
+5. **`types/`** hanya untuk **global types** (mis. `PageProps`, `FlashMessages`). Type khusus fitur ditaruh di samping komponennya.
+6. **Buat subfolder hanya saat ada file pertama.** Jangan pre-create kosong.
+7. **Barrel `index.ts`** di setiap feature-folder (`Components/Dashboard/index.ts`) supaya konsumen tinggal `import { CourseCard, Course } from '@/Components/Dashboard'`.
+8. **Naming:**
+   - Folder top-level: ikut breeze — `Pages/`, `Components/`, `Layouts/` (PascalCase); `lib/`, `types/` (lowercase)
+   - Feature subfolder dalam `Components/`: **PascalCase** match nama Inertia page → `Dashboard/`, `Assignment/`, `Exam/`
+   - File komponen: **PascalCase.tsx** → `CourseCard.tsx`
+   - File types: `<feature>.type.ts` → `dashboard.type.ts`
+   - File helpers/hooks: **camelCase.ts** → `subjects.ts`, `useExamTimer.ts`
 
 ### Inertia Page Resolver
 
-Pakai resolver default Inertia — nama page langsung resolve ke `Pages/<name>.tsx`.
+Default Inertia — nama page langsung resolve ke `Pages/<name>.tsx`:
 
-**Controller convention:**
 ```php
-// AuthController.php
 return Inertia::render('Auth/StudentLogin');               // → Pages/Auth/StudentLogin.tsx
-
-// DashboardController.php
 return Inertia::render('Dashboard/Dashboard');             // → Pages/Dashboard/Dashboard.tsx
-
-// Phase 3 nanti
 return Inertia::render('Assignment/AssignmentDetail', []); // → Pages/Assignment/AssignmentDetail.tsx
 ```
 
-### Pola Import (pakai barrel, jangan deep import)
+### Pola Import (pakai barrel)
 
 ```tsx
-// ✅ baik — import dari folder via barrel
-import { CourseCard, HeroGreeting } from '@/features/Dashboard/components';
-import { DashboardPageProps } from '@/features/Dashboard/types';
-import { EmptyState } from '@/shared/components';
-import { StudentLayout } from '@/shared/layouts';
-import { staggerContainer, toast, useFlashToast } from '@/shared/lib';
+// ✅ baik — barrel import per folder
+import { CourseCard, HeroGreeting, DashboardPageProps } from '@/Components/Dashboard';
+import { EmptyState } from '@/Components';
+import { StudentLayout } from '@/Layouts';
+import { staggerContainer, toast, useFlashToast } from '@/lib';
+import { PageProps } from '@/types';
 
-// ❌ hindari — deep import membuat refactor (rename file) jadi ribet
-import CourseCard from '@/features/Dashboard/components/CourseCard';
-import { toast } from '@/shared/lib/toast';
+// ❌ hindari — deep import bikin refactor lebih ribet
+import CourseCard from '@/Components/Dashboard/CourseCard';
+import { toast } from '@/lib/toast';
 ```
 
-### Kapan Bikin Folder Baru di `features/`?
+### Kapan Bikin Subfolder Baru di `Components/`?
 
-- Punya minimal 1 page sendiri (route Inertia).
-- Punya entitas backend yang berbeda (Assignment, Exam, Material adalah domain berbeda).
-- Bisa dihapus tanpa merobohkan fitur lain.
+Bikin folder fitur (mis. `Components/Course/`) kalau:
+- Punya **2+ komponen** khusus fitur itu (1 komponen → langsung top-level Components/, tidak perlu subfolder)
+- Punya helper/type khusus yang co-located dengan komponennya
 
-Kalau cuma 1 komponen kecil yang dipakai di banyak tempat → langsung ke `shared/components/`.
-
-### Kapan Bikin Subfolder Baru di dalam Feature?
-
-Buat **saat ada file pertama** yang masuk ke kategorinya. Jangan pre-create kosong. Pages **tidak** masuk di sini — selalu di `resources/js/Pages/`.
-
-| Subfolder | Buat saat | Contoh isi |
-|-----------|-----------|------------|
-| `components/` | Punya komponen yang khusus fitur ini | `CourseCard.tsx` |
-| `types/` | Ada type/interface yang perlu di-share | `dashboard.type.ts` |
-| `helpers/` | Ada utility function pure (peta, formatter) | `subjects.ts` |
-| `hooks/` | Ada custom React hook | `useExamTimer.ts` |
-| `repositories/` | Ada wrapper Inertia router / axios call | `examRepository.ts` |
-| `enums/` | Ada TS enum / const-as-enum | `QuestionType.ts` |
-| `mock/` | Ada data dummy untuk dev/test | `mockExam.ts` |
+Kalau cuma 1 komponen kecil tanpa helper/type khusus → letakkan di top-level `Components/` saja.
 
 ## Dependency Tambahan untuk Student Dashboard
 

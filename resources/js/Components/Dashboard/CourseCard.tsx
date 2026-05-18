@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { ArrowUpRight, User } from 'lucide-react';
-import { fadeUp } from '@/shared/lib/motion';
-import { getSubjectStyle } from '@/features/Dashboard/helpers/subjects';
-import { Course } from '@/features/Dashboard/types';
+import { fadeUp } from '@/lib/motion';
+import { getSubjectStyle } from './subjects';
+import { Course } from './dashboard.type';
 
 interface Props {
     course: Course;

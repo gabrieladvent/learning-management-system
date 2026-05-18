@@ -1,6 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { PageProps } from '@/shared/types';
+import { PageProps } from '@/types';
 import { toast } from './toast';
 
 /**
