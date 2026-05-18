@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Enums\GenderEnum;
+use Illuminate\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,8 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Student extends Model
+class Student extends Model implements AuthenticatableContract
 {
+    use Authenticatable;
     use HasFactory;
     use HasUuids;
     use SoftDeletes;
@@ -62,5 +65,22 @@ class Student extends Model
     public function examSessions(): HasMany
     {
         return $this->hasMany(ExamSession::class);
+    }
+
+    public function getAuthPassword()
+    {
+        return $this->user?->password ?? '';
+    }
+
+    public function getRememberToken()
+    {
+        return '';
+    }
+
+    public function setRememberToken($value): void {}
+
+    public function getRememberTokenName()
+    {
+        return '';
     }
 }
