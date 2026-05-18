@@ -171,7 +171,7 @@ class AssignmentsRelationManager extends RelationManager
                 Action::make('manage')
                     ->label('Kelola')
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn ($record) => AssignmentResource::getUrl('edit', ['record' => $record])),
+                    ->url(fn ($record) => AssignmentResource::getUrl('view', ['record' => $record])),
 
                 ActionGroup::make([
                     EditAction::make(),
