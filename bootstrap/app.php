@@ -18,7 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        $middleware->redirectGuestsTo(function ($request) {
+            if ($request->is('student') || $request->is('student/*')) {
+                return route('student.login');
+            }
+
+            return route('login');
+        });
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

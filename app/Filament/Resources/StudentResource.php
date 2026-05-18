@@ -6,12 +6,14 @@ use App\Filament\Resources\StudentResource\Pages;
 use App\Models\Enums\GenderEnum;
 use App\Models\School;
 use App\Models\Student;
+use Carbon\Carbon;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\BulkActionGroup;
@@ -85,8 +87,29 @@ class StudentResource extends Resource
                 DatePicker::make('birth_date')
                     ->label('Tanggal Lahir')
                     ->native(false)
-                    ->displayFormat('d M Y'),
+                    ->displayFormat('d M Y')
+                    ->required(),
             ])->columns(2),
+
+            Section::make('Akun Login')
+                ->description('Siswa login pakai NISN + password. Default password = tanggal lahir (YYYY-MM-DD). Kosongkan saat edit jika tidak ingin mengubah password.')
+                ->schema([
+                    TextInput::make('password')
+                        ->label('Password')
+                        ->password()
+                        ->revealable()
+                        ->minLength(6)
+                        ->maxLength(72)
+                        ->dehydrated(fn ($state) => filled($state))
+                        ->required(fn (string $operation) => $operation === 'create')
+                        ->helperText(fn (string $operation) => $operation === 'create'
+                            ? 'Default: tanggal lahir format YYYY-MM-DD. Kosongkan untuk pakai default.'
+                            : 'Kosongkan jika tidak ingin mengganti password.')
+                        ->placeholder(fn (Get $get) => $get('birth_date')
+                            ? Carbon::parse($get('birth_date'))->format('Y-m-d')
+                            : 'YYYY-MM-DD'),
+                ])
+                ->collapsed(fn (string $operation) => $operation === 'edit'),
         ]);
     }
 

@@ -83,6 +83,7 @@ export default function Authenticated({
 
                         <div className="-me-2 flex items-center sm:hidden">
                             <button
+                                title='btn-navigation'
                                 onClick={() =>
                                     setShowingNavigationDropdown(
                                         (previousState) => !previousState,
