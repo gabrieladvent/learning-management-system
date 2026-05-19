@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Student\AuthController as StudentAuthController;
+use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\MaterialController as StudentMaterialController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -18,6 +20,8 @@ Route::prefix('student')->name('student.')->group(function () {
 
     Route::middleware('auth:student')->group(function () {
         Route::get('dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
+        Route::get('courses/{course}', [StudentCourseController::class, 'show'])->name('courses.show');
+        Route::get('courses/{course}/materials/{material}', [StudentMaterialController::class, 'show'])->name('materials.show');
         Route::post('logout', [StudentAuthController::class, 'logout'])->name('logout');
     });
 });

@@ -1,4 +1,5 @@
 import '../css/app.css';
+import 'katex/dist/katex.min.css';
 import './bootstrap';
 
 import { createInertiaApp } from '@inertiajs/react';

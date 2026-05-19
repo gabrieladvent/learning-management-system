@@ -1,0 +1,79 @@
+<?php
+
+namespace App\Actions\Student;
+
+use App\Models\ClassroomSubject;
+use App\Models\Material;
+use App\Models\Student;
+use Illuminate\Database\Eloquent\Builder;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
+class GetStudentMaterial
+{
+    /**
+     * Ambil detail material untuk student. Memvalidasi:
+     * - student terdaftar di classroom milik course
+     * - material ada di course tersebut
+     * - material is_published & dalam range available_from/until
+     *
+     * @return array{
+     *     course: array<string, mixed>,
+     *     material: array<string, mixed>,
+     * }
+     */
+    public function handle(Student $student, string $courseId, string $materialId): array
+    {
+        $course = ClassroomSubject::query()
+            ->with(['classroom', 'subject', 'teacher'])
+            ->whereKey($courseId)
+            ->whereHas('classroom.students', fn (Builder $q) => $q->whereKey($student->id))
+            ->first();
+
+        if (! $course) {
+            throw new NotFoundHttpException('Course tidak ditemukan atau kamu tidak terdaftar di kelas ini.');
+        }
+
+        $material = $course->materials()
+            ->whereKey($materialId)
+            ->where('is_published', true)
+            ->where(fn (Builder $q) => $q->whereNull('available_from')->orWhere('available_from', '<=', now()))
+            ->where(fn (Builder $q) => $q->whereNull('available_until')->orWhere('available_until', '>=', now()))
+            ->first();
+
+        if (! $material) {
+            throw new NotFoundHttpException('Materi tidak ditemukan atau belum tersedia.');
+        }
+
+        $files = $material->getMedia('material_files')->map(fn ($media) => [
+            'id' => $media->uuid ?? (string) $media->id,
+            'name' => $media->name,
+            'file_name' => $media->file_name,
+            'mime_type' => $media->mime_type,
+            'size' => $media->size,
+            'extension' => pathinfo($media->file_name, PATHINFO_EXTENSION),
+            'url' => $media->getUrl(),
+        ])->values()->all();
+
+        return [
+            'course' => [
+                'id' => $course->id,
+                'subject_name' => $course->subject?->name,
+                'subject_code' => $course->subject?->code,
+                'classroom_name' => $course->classroom?->name,
+                'teacher_name' => $course->teacher?->full_name,
+            ],
+            'material' => [
+                'id' => $material->id,
+                'title' => $material->title,
+                'topic' => $material->topic,
+                'description' => $material->description,
+                'content' => $material->content,
+                'link_url' => $material->link_url,
+                'available_from' => $material->available_from?->toIso8601String(),
+                'available_until' => $material->available_until?->toIso8601String(),
+                'created_at' => $material->created_at?->toIso8601String(),
+                'files' => $files,
+            ],
+        ];
+    }
+}
