@@ -1,3 +1,4 @@
+import type { AssignmentListItem } from '@/Components/Assignment';
 import type { MaterialFile } from '@/Components/FileCard';
 
 export interface CourseSummary {
@@ -36,6 +37,7 @@ export interface MaterialDetail {
     available_until: string | null;
     created_at: string | null;
     files: MaterialFile[];
+    assignments: AssignmentListItem[];
 }
 
 export type CourseDetailPageProps = {

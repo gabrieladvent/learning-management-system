@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Student\AssignmentController as StudentAssignmentController;
 use App\Http\Controllers\Student\AuthController as StudentAuthController;
 use App\Http\Controllers\Student\CourseController as StudentCourseController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
@@ -22,6 +23,8 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::get('dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
         Route::get('courses/{course}', [StudentCourseController::class, 'show'])->name('courses.show');
         Route::get('courses/{course}/materials/{material}', [StudentMaterialController::class, 'show'])->name('materials.show');
+        Route::get('materials/{material}/assignments/{assignment}', [StudentAssignmentController::class, 'show'])->name('assignments.show');
+        Route::post('materials/{material}/assignments/{assignment}/submit', [StudentAssignmentController::class, 'submit'])->name('assignments.submit');
         Route::post('logout', [StudentAuthController::class, 'logout'])->name('logout');
     });
 });

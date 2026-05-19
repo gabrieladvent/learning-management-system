@@ -2,6 +2,7 @@
 
 namespace App\Actions\Student;
 
+use App\Models\Assignment;
 use App\Models\ClassroomSubject;
 use App\Models\Material;
 use App\Models\Student;
@@ -54,6 +55,17 @@ class GetStudentMaterial
             'url' => $media->getUrl(),
         ])->values()->all();
 
+        $assignments = $material->assignments()
+            ->where('is_published', true)
+            ->where(fn (Builder $q) => $q->whereNull('available_from')->orWhere('available_from', '<=', now()))
+            ->where(fn (Builder $q) => $q->whereNull('available_until')->orWhere('available_until', '>=', now()))
+            ->with(['submissions' => fn ($q) => $q->where('student_id', $student->id)])
+            ->orderBy('order')
+            ->get()
+            ->map(fn (Assignment $assignment) => $this->mapAssignment($assignment))
+            ->values()
+            ->all();
+
         return [
             'course' => [
                 'id' => $course->id,
@@ -73,7 +85,38 @@ class GetStudentMaterial
                 'available_until' => $material->available_until?->toIso8601String(),
                 'created_at' => $material->created_at?->toIso8601String(),
                 'files' => $files,
+                'assignments' => $assignments,
             ],
+        ];
+    }
+
+    /**
+     * Bentuk ringkasan assignment + status submission siswa untuk list card.
+     *
+     * @return array<string, mixed>
+     */
+    private function mapAssignment(Assignment $assignment): array
+    {
+        $submission = $assignment->submissions->first();
+        $isOverdue = $assignment->deadline && now()->greaterThan($assignment->deadline);
+
+        $status = match (true) {
+            $submission && $submission->score !== null => 'graded',
+            $submission && $submission->submitted_at !== null => 'submitted',
+            $isOverdue => 'overdue',
+            default => 'pending',
+        };
+
+        return [
+            'id' => $assignment->id,
+            'title' => $assignment->title,
+            'description' => $assignment->description ? str($assignment->description)->stripTags()->limit(160)->toString() : null,
+            'deadline' => $assignment->deadline?->toIso8601String(),
+            'max_score' => $assignment->max_score !== null ? (float) $assignment->max_score : null,
+            'status' => $status,
+            'is_overdue' => (bool) $isOverdue,
+            'submitted_at' => $submission?->submitted_at?->toIso8601String(),
+            'score' => $submission && $submission->score !== null ? (float) $submission->score : null,
         ];
     }
 }

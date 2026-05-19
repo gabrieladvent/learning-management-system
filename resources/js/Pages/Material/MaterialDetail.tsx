@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, ExternalLink, FileText, Paperclip } from 'lucide-react';
+import { ArrowLeft, Calendar, ClipboardList, ExternalLink, FileText, LucideIcon, Paperclip } from 'lucide-react';
+import { AssignmentListCard } from '@/Components/Assignment';
 import { FileCard, MathContent } from '@/Components';
 import type { MaterialDetailPageProps } from '@/Components/Course';
 import { StudentLayout } from '@/Layouts';
@@ -24,6 +25,9 @@ export default function MaterialDetail() {
     const hasContent = !!material.content?.trim();
     const hasFiles = material.files.length > 0;
     const hasLink = !!material.link_url;
+    const assignments = material.assignments ?? [];
+    const hasAssignments = assignments.length > 0;
+    const hasAnyContent = hasContent || hasFiles || hasLink || hasAssignments;
 
     return (
         <StudentLayout title={material.title}>
@@ -129,13 +133,25 @@ export default function MaterialDetail() {
                 </section>
             )}
 
-            {/*
-              Slot untuk Phase 3 (Tugas) & Phase 4 (Ujian).
-              Render section "Aktivitas" di sini — di bawah konten supaya alur baca-→-kerjakan.
-              Backend menambah `assignments[]` & `exams[]` ke `MaterialDetail` di phase tsb.
-            */}
+            {hasAssignments && (
+                <section className="mb-8">
+                    <SectionTitle icon={ClipboardList} title="Tugas" count={assignments.length} />
+                    <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={staggerContainer}
+                        className="grid grid-cols-1 gap-3"
+                    >
+                        {assignments.map((a) => (
+                            <AssignmentListCard key={a.id} materialId={material.id} assignment={a} />
+                        ))}
+                    </motion.div>
+                </section>
+            )}
 
-            {!hasContent && !hasFiles && !hasLink && (
+            {/* Slot untuk Phase 4 (Ujian) — section "Ujian" akan render di sini setelah backend menambah `exams[]`. */}
+
+            {!hasAnyContent && (
                 <motion.div
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -160,7 +176,7 @@ function SectionTitle({
     title,
     count,
 }: {
-    icon: typeof Paperclip;
+    icon: LucideIcon;
     title: string;
     count?: number;
 }) {
