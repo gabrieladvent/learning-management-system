@@ -340,6 +340,15 @@ Implikasi UX untuk dashboard siswa:
 
 > **Catatan struktural:** Sama seperti tugas, ujian (`Exam`) milik Material. **Section "Ujian" tampil di Material Detail page**, di bawah section Tugas. Badge `N Ujian` di Course Detail card material memberi tahu siswa "blok ini ada ujiannya".
 
+> **Carry-over dari Phase 3 — Migrasi ke Spatie Activitylog:**
+> Saat Phase 3, activity log assignment di-derive dari timestamp + kolom `last_edited_at`. Pendekatan ini cukup untuk 1 model, tapi Phase 4 akan butuh timeline mirip untuk `ExamSession` (started → answered → submitted → graded) dan Phase 5 menyebut audit/compliance. Sebelum mulai event Exam, ganti ke `spatie/laravel-activitylog`:
+> 1. `composer require spatie/laravel-activitylog` + publish migration
+> 2. Tambah trait `LogsActivity` ke `AssignmentSubmission` (config `logOnly(['content','score','feedback','submitted_at'])`)
+> 3. Set causer di action: `activity()->causedBy($student)->performedOn($submission)->log('updated')`
+> 4. Refactor `GetStudentAssignment::buildActivities()` → query `Activity::forSubject($submission)` + map ke shape `ActivityItem` (frontend `Components/ActivityTimeline.tsx` tidak berubah)
+> 5. Drop migration & kolom `last_edited_at` di `assignment_submissions` (causer + event `updated` sudah cover)
+> 6. Pakai trait yang sama untuk `ExamSession`, `ExamSubmission`, `Material`, `Assignment`, `Exam` — satu sumber timeline lintas model
+
 ### Backend — list ujian per material
 
 Update `GetStudentMaterial` action: tambah `exams[]` ke payload, filter visibility yang sama. Per exam kirim: `id`, `title`, `mode` (`online_quiz` | `submission`), `starts_at`, `duration_minutes`, `max_score`, `status` (enum), plus **status session siswa** (`belum_mulai` / `in_progress` / `submitted` / `graded`, dengan `total_score` kalau sudah).
