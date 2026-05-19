@@ -7,7 +7,7 @@ use App\Models\AssignmentSubmission;
 use App\Models\Material;
 use App\Models\Student;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
+use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class GetStudentAssignment
@@ -105,8 +105,13 @@ class GetStudentAssignment
     }
 
     /**
-     * Bentuk timeline aktivitas dari timestamp yang sudah ada — tidak perlu audit log table.
-     * Diurutkan descending (terbaru di atas) agar siap dirender langsung.
+     * Bentuk timeline aktivitas dari spatie/laravel-activitylog (subject = submission).
+     * Event terdeteksi dari attribute_changes:
+     *  - created (causer Student) → "Kamu mengumpulkan tugas"
+     *  - updated (causer Student) → "Submission diperbarui"
+     *  - updated dengan perubahan `score` → "Dinilai oleh guru"
+     * Item "Tugas dipublikasikan" tetap di-derive dari Assignment.created_at / available_from
+     * karena Assignment belum di-log secara default.
      *
      * @return array<int, array{id:string,title:string,description:string,occurred_at:string,variant:string}>
      */
@@ -126,43 +131,63 @@ class GetStudentAssignment
         }
 
         if ($submission) {
-            // "create" = saat row pertama di-insert. created_at immutable, tidak ter-touch oleh edit.
-            if ($submission->created_at) {
-                $items[] = [
-                    'id' => 'submission-created',
-                    'title' => 'Kamu mengumpulkan tugas',
-                    'description' => 'Submission pertama dikumpulkan.',
-                    'occurred_at' => $submission->created_at->toIso8601String(),
-                    'variant' => 'create',
-                ];
-            }
+            $activities = Activity::query()
+                ->where('subject_type', $submission->getMorphClass())
+                ->where('subject_id', $submission->getKey())
+                ->orderBy('created_at')
+                ->get();
 
-            // "update" = field last_edited_at di-set oleh action SubmitStudentAssignment saat siswa edit.
-            // Deterministik, tidak pakai heuristic threshold.
-            if ($submission->last_edited_at) {
-                $items[] = [
-                    'id' => 'submission-updated',
-                    'title' => 'Submission diperbarui',
-                    'description' => 'Kamu memperbarui jawaban atau lampiran.',
-                    'occurred_at' => $submission->last_edited_at->toIso8601String(),
-                    'variant' => 'update',
-                ];
-            }
-
-            if ($submission->graded_at && $submission->score !== null) {
-                $items[] = [
-                    'id' => 'submission-graded',
-                    'title' => 'Dinilai oleh guru',
-                    'description' => 'Nilai: '.rtrim(rtrim((string) $submission->score, '0'), '.').($assignment->max_score ? ' / '.rtrim(rtrim((string) $assignment->max_score, '0'), '.') : ''),
-                    'occurred_at' => $submission->graded_at->toIso8601String(),
-                    'variant' => 'grade',
-                ];
+            foreach ($activities as $activity) {
+                $items[] = $this->mapAssignmentActivity($activity, $assignment);
             }
         }
 
-        usort($items, fn ($a, $b) => Carbon::parse($b['occurred_at'])->getTimestamp() <=> Carbon::parse($a['occurred_at'])->getTimestamp());
+        usort($items, fn ($a, $b) => strcmp($b['occurred_at'], $a['occurred_at']));
 
-        return $items;
+        return array_values(array_filter($items));
+    }
+
+    /**
+     * @return array{id:string,title:string,description:string,occurred_at:string,variant:string}
+     */
+    private function mapAssignmentActivity(Activity $activity, Assignment $assignment): array
+    {
+        $changes = $activity->attribute_changes ?? collect();
+        $attrs = $changes->get('attributes') ?? [];
+        $scoreChanged = is_array($attrs) && array_key_exists('score', $attrs) && $attrs['score'] !== null;
+        $occurredAt = $activity->created_at?->toIso8601String() ?? now()->toIso8601String();
+
+        if ($activity->event === 'created') {
+            return [
+                'id' => 'activity-'.$activity->id,
+                'title' => 'Kamu mengumpulkan tugas',
+                'description' => 'Submission pertama dikumpulkan.',
+                'occurred_at' => $occurredAt,
+                'variant' => 'create',
+            ];
+        }
+
+        if ($scoreChanged) {
+            $score = $attrs['score'];
+            $max = $assignment->max_score;
+            $description = 'Nilai: '.rtrim(rtrim((string) $score, '0'), '.').($max ? ' / '.rtrim(rtrim((string) $max, '0'), '.') : '');
+
+            return [
+                'id' => 'activity-'.$activity->id,
+                'title' => 'Dinilai oleh guru',
+                'description' => $description,
+                'occurred_at' => $occurredAt,
+                'variant' => 'grade',
+            ];
+        }
+
+        return [
+            'id' => 'activity-'.$activity->id,
+            'title' => 'Submission diperbarui',
+            'description' => 'Kamu memperbarui jawaban atau lampiran.',
+            'occurred_at' => $occurredAt,
+            'variant' => 'update',
+        ];
     }
 
     /**

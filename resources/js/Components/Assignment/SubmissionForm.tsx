@@ -2,6 +2,7 @@ import { useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { CloudUpload, FileText, Loader2, Send, Trash2, X } from 'lucide-react';
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from 'react';
+import { TrixEditor } from '@/Components';
 import type { MaterialFile } from '@/Components/FileCard';
 import { toast } from '@/lib';
 import type { AssignmentDetail, AssignmentSubmission } from './assignment.type';
@@ -116,17 +117,16 @@ export default function SubmissionForm({ materialId, assignment, submission, dis
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-                <label htmlFor="content" className="mb-1.5 block text-sm font-medium text-slate-700">
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     Jawaban / Esai
                 </label>
-                <textarea
-                    id="content"
-                    rows={8}
+                <TrixEditor
                     value={data.content}
-                    onChange={(e) => setData('content', e.target.value)}
+                    onChange={(html) => setData('content', html)}
                     disabled={disabled || processing}
                     placeholder="Tulis jawabanmu di sini. Boleh sertakan link / tautan referensi."
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-50 disabled:text-slate-500"
+                    aria-label="Jawaban tugas"
+                    minHeightClass="min-h-[200px]"
                 />
                 {errors.content && <p className="mt-1 text-xs text-rose-600">{errors.content}</p>}
             </div>

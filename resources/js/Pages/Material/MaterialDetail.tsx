@@ -1,7 +1,17 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Calendar, ClipboardList, ExternalLink, FileText, LucideIcon, Paperclip } from 'lucide-react';
+import {
+    ArrowLeft,
+    Calendar,
+    ClipboardList,
+    ExternalLink,
+    FileSpreadsheet,
+    FileText,
+    LucideIcon,
+    Paperclip,
+} from 'lucide-react';
 import { AssignmentListCard } from '@/Components/Assignment';
+import { ExamListCard } from '@/Components/Exam';
 import { FileCard, MathContent } from '@/Components';
 import type { MaterialDetailPageProps } from '@/Components/Course';
 import { StudentLayout } from '@/Layouts';
@@ -27,7 +37,9 @@ export default function MaterialDetail() {
     const hasLink = !!material.link_url;
     const assignments = material.assignments ?? [];
     const hasAssignments = assignments.length > 0;
-    const hasAnyContent = hasContent || hasFiles || hasLink || hasAssignments;
+    const exams = material.exams ?? [];
+    const hasExams = exams.length > 0;
+    const hasAnyContent = hasContent || hasFiles || hasLink || hasAssignments || hasExams;
 
     return (
         <StudentLayout title={material.title}>
@@ -149,7 +161,21 @@ export default function MaterialDetail() {
                 </section>
             )}
 
-            {/* Slot untuk Phase 4 (Ujian) — section "Ujian" akan render di sini setelah backend menambah `exams[]`. */}
+            {hasExams && (
+                <section className="mb-8">
+                    <SectionTitle icon={FileSpreadsheet} title="Ujian" count={exams.length} />
+                    <motion.div
+                        initial="hidden"
+                        animate="visible"
+                        variants={staggerContainer}
+                        className="grid grid-cols-1 gap-3"
+                    >
+                        {exams.map((e) => (
+                            <ExamListCard key={e.id} materialId={material.id} exam={e} />
+                        ))}
+                    </motion.div>
+                </section>
+            )}
 
             {!hasAnyContent && (
                 <motion.div

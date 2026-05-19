@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Lock, Pencil } from 'lucide-react';
-import { FileCard } from '@/Components';
+import { FileCard, MathContent } from '@/Components';
 import { fadeUp, staggerContainer } from '@/lib/motion';
 import type { AssignmentSubmission } from './assignment.type';
 
@@ -59,8 +59,11 @@ export default function SubmissionView({ submission, canEdit, lockReason, onEdit
                     <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Jawaban
                     </div>
-                    <div className="whitespace-pre-wrap rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm leading-6 text-slate-800">
-                        {submission.content}
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4 text-sm leading-6 text-slate-800">
+                        <MathContent
+                            html={submission.content ?? ''}
+                            className="prose prose-sm prose-slate max-w-none prose-p:my-2"
+                        />
                     </div>
                 </div>
             )}

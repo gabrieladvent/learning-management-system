@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
@@ -15,6 +17,7 @@ class AssignmentSubmission extends Model implements HasMedia
     use HasFactory;
     use HasUuids;
     use InteractsWithMedia;
+    use LogsActivity;
     use SoftDeletes;
 
     protected $fillable = [
@@ -22,7 +25,6 @@ class AssignmentSubmission extends Model implements HasMedia
         'student_id',
         'content',
         'submitted_at',
-        'last_edited_at',
         'score',
         'feedback',
         'graded_at',
@@ -32,10 +34,17 @@ class AssignmentSubmission extends Model implements HasMedia
     {
         return [
             'submitted_at' => 'datetime',
-            'last_edited_at' => 'datetime',
             'score' => 'decimal:2',
             'graded_at' => 'datetime',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['content', 'submitted_at', 'score', 'feedback', 'graded_at'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 
     /**

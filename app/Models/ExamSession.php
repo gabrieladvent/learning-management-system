@@ -7,11 +7,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class ExamSession extends Model
 {
     use HasFactory;
     use HasUuids;
+    use LogsActivity;
 
     protected $fillable = [
         'exam_id',
@@ -28,6 +31,14 @@ class ExamSession extends Model
             'submitted_at' => 'datetime',
             'total_score' => 'decimal:2',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['started_at', 'submitted_at', 'total_score'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 
     public function exam(): BelongsTo

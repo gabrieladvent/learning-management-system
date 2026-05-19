@@ -2,8 +2,8 @@
 
 namespace App\Actions\Student;
 
-use App\Models\Assignment;
-use App\Models\AssignmentSubmission;
+use App\Models\Exam;
+use App\Models\ExamSubmission;
 use App\Models\Material;
 use App\Models\Student;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,55 +12,64 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
-class SubmitStudentAssignment
+class SubmitExamSubmission
 {
     /**
-     * Validasi & simpan submission siswa.
+     * Simpan submission ujian mode `submission` (text + file + link).
      *
      * Aturan file (server-side, source-of-truth):
-     * - extension harus ada di assignment.allowed_file_types
-     * - size <= assignment.max_file_size_mb (MB)
+     *  - extension harus ada di exam.allowed_file_types
+     *  - size <= exam.max_file_size_mb (MB)
      *
-     * Aturan lain:
-     * - Tidak boleh setelah deadline
-     * - Siswa harus enrolled di classroom course
-     * - Material & Assignment harus visible (is_published + range available)
+     * Aturan window:
+     *  - Tidak boleh sebelum `starts_at`
+     *  - Tidak boleh setelah `available_until` (kalau ada) — itu batas paling longgar
      *
-     * @param  array<int, UploadedFile>  $newFiles  File yang baru di-upload
-     * @param  array<int, string>  $removedFileIds  UUID media existing yang dihapus saat edit
+     * @param  array<int, UploadedFile>  $newFiles
+     * @param  array<int, string>  $removedFileIds
      */
     public function handle(
         Student $student,
         string $materialId,
-        string $assignmentId,
+        string $examId,
         ?string $content,
+        ?string $linkUrl,
         array $newFiles,
         array $removedFileIds,
-    ): AssignmentSubmission {
+    ): ExamSubmission {
         $material = $this->resolveMaterial($student, $materialId);
-        $assignment = $this->resolveAssignment($material, $assignmentId);
+        $exam = $this->resolveExam($material, $examId);
 
-        if ($assignment->deadline && now()->greaterThan($assignment->deadline)) {
+        if ($exam->mode->value !== 'submission') {
             throw ValidationException::withMessages([
-                'deadline' => 'Tugas sudah melewati deadline, tidak bisa dikumpulkan lagi.',
+                'mode' => 'Ujian ini bukan mode submission.',
             ]);
         }
 
-        $this->validateFiles($assignment, $newFiles);
+        if ($exam->starts_at && now()->lessThan($exam->starts_at)) {
+            throw ValidationException::withMessages([
+                'starts_at' => 'Ujian belum dimulai. Tidak bisa mengumpulkan sekarang.',
+            ]);
+        }
 
-        return DB::transaction(function () use ($assignment, $student, $content, $newFiles, $removedFileIds) {
-            // withTrashed: unique(assignment_id, student_id) tidak respect soft-delete di DB level.
-            // Tanpa ini, submission yang pernah dihapus admin → siswa tidak bisa submit lagi (1062).
-            $submission = AssignmentSubmission::withTrashed()
+        if ($exam->available_until && now()->greaterThan($exam->available_until)) {
+            throw ValidationException::withMessages([
+                'available_until' => 'Window pengumpulan ujian sudah ditutup.',
+            ]);
+        }
+
+        $this->validateFiles($exam, $newFiles);
+
+        return DB::transaction(function () use ($exam, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
+            $submission = ExamSubmission::withTrashed()
                 ->firstOrNew([
-                    'assignment_id' => $assignment->id,
+                    'exam_id' => $exam->id,
                     'student_id' => $student->id,
                 ]);
 
-            // Defense in depth: kalau guru sudah menilai, kunci. Frontend juga sudah hide tombol Edit.
             if ($submission->exists && $submission->score !== null) {
                 throw ValidationException::withMessages([
-                    'submission' => 'Tugas sudah dinilai oleh guru. Tidak bisa diedit lagi.',
+                    'submission' => 'Ujian sudah dinilai oleh guru. Tidak bisa diedit lagi.',
                 ]);
             }
 
@@ -68,9 +77,8 @@ class SubmitStudentAssignment
                 $submission->restore();
             }
 
-            // Trait LogsActivity di model akan otomatis mencatat event 'created'/'updated'
-            // dengan causer = student aktif (lewat CauserResolver di AppServiceProvider).
             $submission->content = $content;
+            $submission->link_url = $linkUrl;
             $submission->submitted_at = now();
             $submission->save();
 
@@ -105,33 +113,33 @@ class SubmitStudentAssignment
         return $material;
     }
 
-    private function resolveAssignment(Material $material, string $assignmentId): Assignment
+    private function resolveExam(Material $material, string $examId): Exam
     {
-        $assignment = $material->assignments()
-            ->whereKey($assignmentId)
+        $exam = $material->exams()
+            ->whereKey($examId)
             ->where('is_published', true)
             ->where(fn (Builder $q) => $q->whereNull('available_from')->orWhere('available_from', '<=', now()))
             ->where(fn (Builder $q) => $q->whereNull('available_until')->orWhere('available_until', '>=', now()))
             ->first();
 
-        if (! $assignment) {
-            throw new NotFoundHttpException('Tugas tidak ditemukan atau belum tersedia.');
+        if (! $exam) {
+            throw new NotFoundHttpException('Ujian tidak ditemukan atau belum tersedia.');
         }
 
-        return $assignment;
+        return $exam;
     }
 
     /**
      * @param  array<int, UploadedFile>  $files
      */
-    private function validateFiles(Assignment $assignment, array $files): void
+    private function validateFiles(Exam $exam, array $files): void
     {
         if ($files === []) {
             return;
         }
 
-        $allowed = array_map('strtolower', $assignment->allowed_file_types ?? Assignment::DEFAULT_FILE_TYPES);
-        $maxBytes = ($assignment->max_file_size_mb ?? 10) * 1024 * 1024;
+        $allowed = array_map('strtolower', $exam->allowed_file_types ?? Exam::DEFAULT_FILE_TYPES);
+        $maxBytes = ($exam->max_file_size_mb ?? 10) * 1024 * 1024;
 
         $errors = [];
 
@@ -150,7 +158,7 @@ class SubmitStudentAssignment
             }
 
             if ($file->getSize() > $maxBytes) {
-                $errors["files.{$i}"] = 'Ukuran file melebihi batas '.$assignment->max_file_size_mb.' MB.';
+                $errors["files.{$i}"] = 'Ukuran file melebihi batas '.$exam->max_file_size_mb.' MB.';
             }
         }
 

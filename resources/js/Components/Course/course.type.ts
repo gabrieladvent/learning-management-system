@@ -1,4 +1,5 @@
 import type { AssignmentListItem } from '@/Components/Assignment';
+import type { ExamListItem } from '@/Components/Exam';
 import type { MaterialFile } from '@/Components/FileCard';
 
 export interface CourseSummary {
@@ -38,6 +39,7 @@ export interface MaterialDetail {
     created_at: string | null;
     files: MaterialFile[];
     assignments: AssignmentListItem[];
+    exams: ExamListItem[];
 }
 
 export type CourseDetailPageProps = {
