@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* KaTeX: display math kiri-rata (default-nya center, bikin loncat dari teks paragraf). */
+.katex-display {
+    margin: 0.75em 0;
+    text-align: left;
+}
+
+.katex-display > .katex {
+    text-align: left;
+    display: inline-block;
+    white-space: normal;
+}

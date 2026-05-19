@@ -1,4 +1,4 @@
-import { Head, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { BookMarked, ClipboardList, FileSpreadsheet } from 'lucide-react';
 import { CourseCard, DashboardPageProps, HeroGreeting } from '@/Components/Dashboard';
@@ -49,7 +49,11 @@ export default function Dashboard() {
                         className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
                     >
                         {courses.map((course) => (
-                            <CourseCard key={course.id} course={course} />
+                            <CourseCard
+                                key={course.id}
+                                course={course}
+                                onClick={() => router.visit(route('student.courses.show', { course: course.id }))}
+                            />
                         ))}
                     </motion.div>
                 )}

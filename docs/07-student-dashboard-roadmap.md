@@ -44,9 +44,36 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
 - **Visibility filter wajib** — siswa hanya melihat material/assignment/exam yang `is_published=true` DAN sekarang ada dalam range `available_from`–`available_until`
 - **Scoping wajib** — siswa hanya melihat course di mana dia ter-enroll (`classroom_students` table)
 
+## Hirarki Konten & UX Material
+
+Penting: di skema database, **Tugas dan Ujian milik Material, bukan langsung milik Course**:
+
+```
+Course (ClassroomSubject)
+└── Material[]         (sorted by `order`)
+    ├── Assignment[]   (sorted by `order` per material)
+    └── Exam[]         (sorted by `order` per material)
+```
+
+Implikasi UX untuk dashboard siswa:
+
+- **Course Detail page** hanya menampilkan **list Material** — tidak ada "section Tugas" atau "section Ujian" terpisah. Itu salah tempat & membingungkan.
+- **Material = "blok pembelajaran"**. Satu material bisa berisi konten (HTML/lampiran/link), tugas, ujian, atau campuran. Guru menyusun urutan belajar via `Material.order`.
+- **Material Detail page** menampilkan: konten (atas) → lampiran → link → **Aktivitas** (tugas + ujian, di bawah). Konvensi *baca dulu → kerjakan*.
+- **Fleksibilitas urutan tugas/ujian** (pretest, mid-test, posttest) dicapai dengan memecah jadi **beberapa material**, bukan dengan field "placement" baru di Assignment/Exam. Contoh alur guru:
+  - Material 1 "Pretest Bab 1" — hanya berisi ujian (`exam.mode = online_quiz`)
+  - Material 2 "Materi Bab 1" — berisi konten + lampiran
+  - Material 3 "Latihan Bab 1" — berisi tugas
+  - Material 4 "Posttest Bab 1" — berisi ujian
+- **List Material di Course Detail** mengindikasikan isi tiap blok via badge dan icon dominan:
+  - Material berisi ujian saja → icon `FileSpreadsheet` (ungu)
+  - Material berisi tugas saja → icon `ClipboardList` (amber)
+  - Material berisi konten → icon `BookOpen` / `FileText` (sky)
+  - Badge tambahan: "Bacaan", "Lampiran", "Tautan", "N Tugas", "M Ujian"
+
 ---
 
-## Phase 1 — Foundation (Setup + Auth)
+## Phase 1 — Foundation (Setup + Auth) ✅ DONE
 
 **Tujuan:** Siswa bisa login dan lihat skeleton dashboard.
 
@@ -118,18 +145,18 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
 
 ---
 
-## Phase 2 — Pembelajaran (View Materi)
+## Phase 2 — Pembelajaran (View Materi) ✅ DONE
 
 **Tujuan:** Siswa bisa lihat materi pembelajaran.
 
 ### Deliverables
 
 1. **Course detail page**
-   - File: `resources/js/Pages/Student/CourseDetail.tsx`
-   - Tampilan: info course (kelas, mapel, guru, semester)
-   - Tab/section: Materi, Tugas, Ujian (Tugas & Ujian di Phase 3 & 4)
+   - File: `resources/js/Pages/Course/CourseDetail.tsx`
+   - Header course (icon mapel + kelas + guru + semester + tombol kembali ke Dashboard)
+   - **Hanya satu section: "Materi Pembelajaran"** — list `Material` urut `order` ascending. Tidak ada section Tugas/Ujian level course.
 
-2. **List materi**
+2. **List materi (di Course Detail)**
    - Sorted by `order` ascending
    - Filter visibility:
      ```php
@@ -137,26 +164,104 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
      ->where(fn($q) => $q->whereNull('available_from')->orWhere('available_from', '<=', now()))
      ->where(fn($q) => $q->whereNull('available_until')->orWhere('available_until', '>=', now()))
      ```
-   - Tampilan card per materi: judul, topik, tanggal publish
+   - Backend juga `withCount` `assignments` dan `exams` (filter visibility yang sama) → `assignment_count`, `exam_count` ikut payload supaya bisa tampil di badge.
+   - Card per materi (`Components/Course/MaterialListCard.tsx`):
+     - Icon dominan: ujian-only → `FileSpreadsheet`/ungu, tugas-only → `ClipboardList`/amber, default → `BookOpen`/`FileText` sky
+     - Topik (uppercase kecil) + judul + deskripsi 2-line clamp
+     - Badge: Bacaan / Lampiran / Tautan / N Tugas / M Ujian
+     - Tanggal publish kanan
+     - Klik → `student.materials.show`
 
 3. **Material detail page**
-   - File: `resources/js/Pages/Student/MaterialDetail.tsx`
-   - Render konten:
-     - **Text** (HTML dari RichEditor) — pakai `dangerouslySetInnerHTML` + sanitize
-     - **File** — daftar file dengan link download (URL dari `getMedia('material_files')->getUrl()`)
-     - **Link** — embed atau "Buka link" button
-   - Render KaTeX (sama seperti di guru) untuk formula matematika
+   - File: `resources/js/Pages/Material/MaterialDetail.tsx`
+   - Header: link kembali ke Course → topik → judul → deskripsi → meta (kelas, guru, tanggal)
+   - Body (urut atas → bawah):
+     1. **Konten** (HTML dari RichEditor) — render via `<MathContent />` di card `prose`
+     2. **Lampiran** — grid `<FileCard />` (1 col mobile, 2 col sm+)
+     3. **Tautan** — single card "Buka tautan"
+     4. **Aktivitas** *(slot untuk Phase 3 & 4)* — section "Tugas" + "Ujian" hanya muncul kalau ada datanya
+   - Empty state kalau material tidak punya konten/lampiran/tautan sama sekali (mis. material yang dipakai sebagai wadah ujian/tugas — Phase 3 & 4 akan menambah info-nya)
 
 4. **Render Math di React**
-   - Install `katex` + `react-katex` (atau pakai CDN seperti di Filament)
-   - Component `<MathContent html={content} />` — parse HTML + render `$...$` jadi math
+   - Install `katex` + `@types/katex`
+   - Import `katex/dist/katex.min.css` di `resources/js/app.tsx`
+   - Component `Components/MathContent.tsx` — parse text node, render `$...$`, `$$...$$`, `\(...\)`, `\[...\]` via `katex.render`. Tidak menyentuh element node sehingga markup HTML guru tetap utuh.
+   - Install `@tailwindcss/typography` → kelas `prose` untuk styling konten guru.
+
+### Acuan Visual (ASCII)
+
+**Course Detail:**
+
+```
+┌───────────────────────────────────────────────────────┐
+│ ← Dashboard                                           │
+│ 📐 Matematika              [X IPA 1] [Semester 1]     │
+│ 👤 Pak Budi                              2025/2026    │
+├───────────────────────────────────────────────────────┤
+│  📖  Materi Pembelajaran                              │
+│      3 blok pembelajaran — urut sesuai pengajaran     │
+│                                                       │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │ 📘 BAB 1 — DASAR                                │ │
+│  │    Pengantar Matematika                         │ │
+│  │    Materi pembuka …                             │ │
+│  │    [Bacaan]  [1 Tugas]            17 Mei 2026  ▸│ │
+│  └─────────────────────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │ 📊 PRETEST                                      │ │
+│  │    Quiz Pengetahuan Awal                        │ │
+│  │    [1 Ujian]                       18 Mei 2026 ▸│ │
+│  └─────────────────────────────────────────────────┘ │
+│  ┌─────────────────────────────────────────────────┐ │
+│  │ 📝 LATIHAN                                      │ │
+│  │    Soal Latihan Bab 1                           │ │
+│  │    [1 Tugas]                       19 Mei 2026 ▸│ │
+│  └─────────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────────┘
+```
+
+**Material Detail (Phase 2 baseline, Phase 3 & 4 tambah section Aktivitas):**
+
+```
+┌───────────────────────────────────────────────────────┐
+│ ← Matematika                                          │
+│ BAB 1 — DASAR                                         │
+│ Pengantar Matematika                                  │
+│ Materi pembuka untuk mata pelajaran Matematika.       │
+│ X IPA 1 • Pak Budi • 17 Mei 2026                      │
+├───────────────────────────────────────────────────────┤
+│ ╭───────────────────────────────────────────────────╮ │
+│ │ Selamat datang di Matematika                      │ │
+│ │ Pada bab ini kita akan mempelajari …              │ │
+│ │ • Memahami terminologi inti.                      │ │
+│ │ • x² + y² = z²    ← rendered via KaTeX            │ │
+│ ╰───────────────────────────────────────────────────╯ │
+│                                                       │
+│ 📎 Lampiran (2)                                       │
+│ ┌─────────────────┐ ┌─────────────────┐              │
+│ │ 📄 Modul.pdf    │ │ 📊 Slide.pptx   │              │
+│ └─────────────────┘ └─────────────────┘              │
+│                                                       │
+│ 🔗 Tautan                                             │
+│ ┌─────────────────────────────────────────────────┐ │
+│ │ 🔗  Buka tautan                                 │ │
+│ │     https://id.khanacademy.org                  │ │
+│ └─────────────────────────────────────────────────┘ │
+│                                                       │
+│ ─ ─ ─ ─  slot Aktivitas (Phase 3 & 4) ─ ─ ─ ─ ─ ─ ─ │
+│ 📝 Tugas (Phase 3)                                    │
+│ 📊 Ujian (Phase 4)                                    │
+└───────────────────────────────────────────────────────┘
+```
 
 ### Acceptance Criteria
 
-- ✅ Klik course → masuk halaman detail
+- ✅ Klik course → masuk halaman detail (hanya menampilkan list Material)
 - ✅ List materi muncul, tersortir, hanya yang published & dalam range
+- ✅ Badge per materi tampil: jenis isi + jumlah tugas/ujian
 - ✅ Klik materi → konten text/file/link tampil
 - ✅ Materi yang berisi `$x^2$` muncul sebagai x² (KaTeX render)
+- ✅ Course/materi yang student tidak ter-enroll → 404 (visibility scoping)
 
 ### Estimasi
 
@@ -168,42 +273,60 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
 
 **Tujuan:** Siswa bisa kerjakan dan submit tugas.
 
+> **Catatan struktural:** Tugas (`Assignment`) milik Material, bukan Course. Karena itu **list tugas tampil di Material Detail page**, bukan di Course Detail page. Di Course Detail siswa hanya melihat list Material; badge `N Tugas` di card material memberi tahu "blok ini ada tugasnya".
+
 ### Deliverables
 
-1. **List tugas di course detail**
-   - Per tugas: judul, deadline, status submit (Belum / Sudah / Sudah dinilai)
-   - Badge warna: hijau (selesai), kuning (belum, deadline jauh), merah (lewat deadline)
+1. **Backend — list tugas per material**
+   - Update `GetStudentMaterial` action: tambah `assignments[]` ke payload dengan filter visibility yang sama (`is_published` + range available).
+   - Per assignment kirim: `id`, `title`, `deadline`, `max_score`, `description` (preview), `is_overdue`, dan **status submission siswa** (`belum` / `submitted` / `graded`, beserta `submitted_at` & `score` kalau ada).
 
-2. **Assignment detail page**
-   - File: `resources/js/Pages/Student/AssignmentDetail.tsx`
+2. **UI — section "Tugas" di Material Detail**
+   - File: `resources/js/Pages/Material/MaterialDetail.tsx` — render section di bawah konten/lampiran/link (slot sudah disiapkan di Phase 2).
+   - Komponen: `Components/Assignment/AssignmentListCard.tsx`
+     - Per card: icon `ClipboardList`, judul, deadline, badge status
+     - Badge warna: 🟢 selesai/graded, 🟡 belum + deadline > 24 jam, 🔴 lewat deadline / mendekati
+     - Klik → `student.assignments.show`
+
+3. **Assignment detail page**
+   - File: `resources/js/Pages/Assignment/AssignmentDetail.tsx`
+   - Header: back ke Material Detail (bukan Course Detail) — supaya breadcrumb konsisten dengan hirarki
    - Tampilan: deskripsi soal, deadline, max score, lampiran guru
-   - Form submission:
+   - Form submission (`Components/Assignment/SubmissionForm.tsx`):
      - Textarea untuk essay
-     - FileUpload (multi) — validasi `allowed_file_types` + `max_file_size_mb` dari assignment
+     - FileUpload (multi) — validasi `allowed_file_types` + `max_file_size_mb` dari assignment (server-side juga)
      - TextInput URL untuk link
      - Tombol Submit / Edit Submission (boleh edit selama belum deadline)
 
-3. **Submission logic**
+4. **Submission logic**
    - File: `app/Http/Controllers/Student/AssignmentController.php`
    - Method `submit()`:
-     - Validasi siswa enrolled di classroom course
+     - Validasi siswa enrolled di classroom course (via material → classroom_subject → classroom)
+     - Validasi assignment visible (is_published + available range)
      - Validasi belum lewat deadline (atau allow late?)
      - Create/update `AssignmentSubmission`
      - Attach files via Spatie Media Library (collection `submission_files`)
      - Set `submitted_at = now()`
 
-4. **View nilai & feedback**
+5. **View nilai & feedback**
    - Setelah dinilai guru, tampil score + feedback di halaman assignment
    - History submission (kalau pernah edit)
 
+6. **Routes baru**
+   - `GET  student/materials/{material}/assignments/{assignment}` → `assignments.show`
+   - `POST student/materials/{material}/assignments/{assignment}/submit` → `assignments.submit`
+   - URL ini menonjolkan hirarki Material→Assignment.
+
 ### Acceptance Criteria
 
+- ✅ Section "Tugas" muncul di Material Detail (bukan Course Detail)
 - ✅ Siswa lihat list tugas dengan status benar
 - ✅ Submit essay + file + link → semua tersimpan
 - ✅ File ekstensi di luar `allowed_file_types` → ditolak
 - ✅ File > `max_file_size_mb` → ditolak
 - ✅ Setelah guru kasih nilai → siswa lihat score & feedback
 - ✅ Lewat deadline → tombol submit disabled
+- ✅ Badge `N Tugas` di Course Detail update setelah guru publikasi tugas baru
 
 ### Estimasi
 
@@ -215,16 +338,31 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
 
 **Tujuan:** Siswa bisa kerjakan ujian dengan dua mode.
 
+> **Catatan struktural:** Sama seperti tugas, ujian (`Exam`) milik Material. **Section "Ujian" tampil di Material Detail page**, di bawah section Tugas. Badge `N Ujian` di Course Detail card material memberi tahu siswa "blok ini ada ujiannya".
+
+### Backend — list ujian per material
+
+Update `GetStudentMaterial` action: tambah `exams[]` ke payload, filter visibility yang sama. Per exam kirim: `id`, `title`, `mode` (`online_quiz` | `submission`), `starts_at`, `duration_minutes`, `max_score`, `status` (enum), plus **status session siswa** (`belum_mulai` / `in_progress` / `submitted` / `graded`, dengan `total_score` kalau sudah).
+
+### UI — section "Ujian" di Material Detail
+
+- File: `resources/js/Pages/Material/MaterialDetail.tsx` — render section "Ujian" setelah section "Tugas" (slot sudah disiapkan di Phase 2).
+- Komponen: `Components/Exam/ExamListCard.tsx`
+  - Icon `FileSpreadsheet` ungu, judul, durasi + waktu mulai
+  - Badge status (belum mulai / sedang dikerjakan / selesai)
+  - CTA dinamis: "Mulai Ujian" / "Lanjutkan" / "Lihat Hasil"
+  - Klik → `student.exams.show`
+
 ### Deliverables Mode `online_quiz`
 
 1. **Exam start screen**
-   - File: `resources/js/Pages/Student/ExamStart.tsx`
+   - File: `resources/js/Pages/Exam/ExamStart.tsx`
    - Info: judul, deskripsi, durasi, jumlah soal, max score
    - Tombol "Mulai Ujian" → create `ExamSession`, set `started_at = now()`
    - Kalau sudah pernah mulai → resume dari soal terakhir
 
 2. **Exam taking page** (fokus utama)
-   - File: `resources/js/Pages/Student/ExamTake.tsx`
+   - File: `resources/js/Pages/Exam/ExamTake.tsx`
    - Layout:
      ```
      ┌──────────────────────────────────────┐
@@ -261,14 +399,15 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
      - Set `submitted_at = now()`
 
 4. **Result page**
-   - File: `resources/js/Pages/Student/ExamResult.tsx`
+   - File: `resources/js/Pages/Exam/ExamResult.tsx`
    - Tampilan total skor (atau "Menunggu penilaian guru" kalau ada essay)
    - Tidak tampilkan jawaban benar (anti-cheat) — kecuali ada setting `show_answers_after`
+   - Tombol "Kembali ke Materi" → balik ke `student.materials.show` (parent material)
 
 ### Deliverables Mode `submission`
 
 1. **Mirip Assignment** — siswa kumpul teks/file/link sebagai jawaban
-2. File: `resources/js/Pages/Student/ExamSubmissionForm.tsx`
+2. File: `resources/js/Pages/Exam/ExamSubmissionForm.tsx`
 3. Method `submit()`:
    - Create/update `ExamSubmission`
    - Attach files (`submission_files`)
@@ -277,9 +416,19 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
    - Mengumpul harus dalam window `starts_at` sampai `starts_at + duration_minutes`
    - Atau lebih longgar — sampai `available_until`?
 
+### Routes baru
+
+- `GET  student/materials/{material}/exams/{exam}` → `exams.show` (start screen)
+- `POST student/materials/{material}/exams/{exam}/start` → `exams.start` (buat session)
+- `GET  student/exams/sessions/{session}` → `exams.take` (halaman pengerjaan, butuh session aktif)
+- `POST student/exams/sessions/{session}/answer` → `exams.answer` (auto-save)
+- `POST student/exams/sessions/{session}/submit` → `exams.submit` (finalize + auto-grade)
+- `POST student/materials/{material}/exams/{exam}/submit` → `exams.submission.submit` (mode submission)
+
 ### Acceptance Criteria
 
 **Online Quiz:**
+- ✅ Section "Ujian" muncul di Material Detail (bukan Course Detail)
 - ✅ Siswa klik mulai → session ter-create dengan `started_at`
 - ✅ Timer berjalan, sync dengan server time
 - ✅ Pindah-pindah soal jawaban tersimpan
@@ -291,6 +440,7 @@ Helper umum simpan di `resources/js/lib/motion.ts` — variant `fadeUp`, `stagge
 **Submission:**
 - ✅ Siswa submit text/file/link → tersimpan
 - ✅ Aturan file (tipe + size) divalidasi
+- ✅ Badge `N Ujian` di Course Detail update setelah guru publikasi ujian baru
 
 ### Estimasi
 
@@ -399,12 +549,19 @@ resources/js/
 │   │   ├── subjects.ts                (peta MTK/FIS/dll → icon + warna)
 │   │   ├── dashboard.type.ts          (Course, DashboardMeta, DashboardPageProps)
 │   │   └── index.ts                   (barrel re-export)
+│   ├── Course/                        ← Phase 2
+│   │   ├── CourseHeader.tsx
+│   │   ├── MaterialListCard.tsx       (card per material di Course Detail, dengan badge tugas/ujian)
+│   │   ├── course.type.ts             (CourseSummary, MaterialListItem, MaterialDetail, *PageProps)
+│   │   └── index.ts
 │   ├── Assignment/                    ← Phase 3
+│   │   ├── AssignmentListCard.tsx     (card di section "Tugas" Material Detail)
 │   │   ├── SubmissionForm.tsx
 │   │   ├── FilePicker.tsx
 │   │   ├── assignment.type.ts
 │   │   └── index.ts
 │   └── Exam/                          ← Phase 4
+│       ├── ExamListCard.tsx           (card di section "Ujian" Material Detail)
 │       ├── QuestionNavigator.tsx
 │       ├── ExamTimer.tsx
 │       ├── useExamTimer.ts            (hook, co-located)
@@ -482,20 +639,31 @@ Kalau cuma 1 komponen kecil tanpa helper/type khusus → letakkan di top-level `
 |---------|-------|------|
 | `framer-motion` | Semua animasi (page transition, list stagger, hover, modal) | Phase 1 |
 | `lucide-react` | Icon set (book, user, clock, chevron, dll) | Phase 1 |
-| `katex` + `react-katex` | Render math di materi & soal ujian | Phase 2 |
 | `clsx` (opsional) | Conditional className lebih ringkas | Phase 1 |
+| `sonner` | Toast (flash session → notifikasi) | Phase 1 |
+| `katex` + `@types/katex` | Render math di materi & soal ujian (kustom wrapper di `MathContent`) | Phase 2 |
+| `@tailwindcss/typography` | Kelas `prose` untuk styling konten RichEditor guru | Phase 2 |
 
 Install di Phase 1:
 ```bash
-npm install framer-motion lucide-react clsx
+npm install framer-motion lucide-react clsx sonner
+```
+
+Install di Phase 2:
+```bash
+npm install katex @types/katex
+npm install -D @tailwindcss/typography
 ```
 
 ---
 
 ## Next Step
 
-Mulai **Phase 1**:
-1. Cek state Inertia/React/Vite saat ini
-2. Setup student auth guard
-3. Buat halaman login NIS + tanggal lahir
-4. Skeleton dashboard berisi list course
+Phase 1 & Phase 2 sudah selesai. Mulai **Phase 3 — Submission Tugas**:
+
+1. Update `GetStudentMaterial` action — tambah `assignments[]` ke payload (filter visibility yang sama)
+2. Tambah section "Tugas" di `Pages/Material/MaterialDetail.tsx` (slot sudah disiapkan)
+3. Buat `Components/Assignment/AssignmentListCard.tsx` dengan badge status (belum/submitted/graded/overdue)
+4. Buat `Pages/Assignment/AssignmentDetail.tsx` + form submission
+5. Buat `Student/AssignmentController` (show + submit)
+6. Tambah seeder `AssignmentSeeder` agar pengembangan bisa di-test end-to-end
