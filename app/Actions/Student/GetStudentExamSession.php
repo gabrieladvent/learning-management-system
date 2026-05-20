@@ -70,6 +70,7 @@ class GetStudentExamSession
                 'started_at' => $session->started_at?->toIso8601String(),
                 'submitted_at' => $session->submitted_at?->toIso8601String(),
                 'expires_at' => $expiresAt?->toIso8601String(),
+                'total_score' => $session->total_score !== null ? (float) $session->total_score : null,
             ],
             'exam' => [
                 'id' => $exam->id,

@@ -42,7 +42,7 @@ export default function ExamResult() {
     // total_score !== null & ada essay → "menunggu penilaian guru untuk soal essay".
 
     const hasEssay = questions.some((q) => q.type === 'essay');
-    const totalScore = (props as unknown as { session: { total_score?: number | null } }).session?.total_score ?? null;
+    const totalScore = session.total_score ?? null;
 
     return (
         <StudentLayout title={`Hasil ${exam.title}`}>

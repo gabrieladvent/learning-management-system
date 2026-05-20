@@ -34,6 +34,6 @@ class ExamAnswer extends Model
 
     public function question(): BelongsTo
     {
-        return $this->belongsTo(ExamQuestion::class);
+        return $this->belongsTo(ExamQuestion::class, 'exam_question_id');
     }
 }

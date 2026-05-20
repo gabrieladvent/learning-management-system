@@ -9,6 +9,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Actions\Action;
@@ -100,12 +101,13 @@ class SessionsRelationManager extends RelationManager
                     ->modalCancelActionLabel('Tutup')
                     ->infolist(function ($record) {
                         return [
-                            Placeholder::make('answers')
+                            TextEntry::make('answers_html')
                                 ->label('')
-                                ->content(function () use ($record) {
+                                ->html()
+                                ->state(function () use ($record) {
                                     $answers = $record->answers()->with('question')->get();
                                     if ($answers->isEmpty()) {
-                                        return new HtmlString('<em class="text-gray-500">Belum ada jawaban</em>');
+                                        return '<em class="text-gray-500">Belum ada jawaban</em>';
                                     }
                                     $html = '';
                                     foreach ($answers as $i => $answer) {
@@ -139,8 +141,9 @@ class SessionsRelationManager extends RelationManager
                                         $html .= '</div>';
                                     }
 
-                                    return new HtmlString($html);
-                                }),
+                                    return $html;
+                                })
+                                ->columnSpanFull(),
                         ];
                     }),
 

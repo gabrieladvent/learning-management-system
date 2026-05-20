@@ -14,7 +14,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Tables\Actions\DeleteAction;
@@ -144,6 +146,12 @@ class StudentResource extends Resource
                 IconColumn::make('is_active')
                     ->label('Aktif')
                     ->boolean(),
+
+                TextColumn::make('user.last_login_at')
+                    ->label('Login Terakhir')
+                    ->since()
+                    ->placeholder('Belum pernah')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('school_id')
@@ -161,6 +169,41 @@ class StudentResource extends Resource
                 ViewAction::make(),
                 ActionGroup::make([
                     EditAction::make(),
+                    Action::make('resetPassword')
+                        ->label('Reset Password ke Tanggal Lahir')
+                        ->icon('heroicon-o-key')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalDescription(fn ($record) => "Password siswa {$record->full_name} akan di-reset ke tanggal lahir ({$record->birth_date?->format('Y-m-d')}).")
+                        ->action(function ($record) {
+                            if (! $record->user) {
+                                Notification::make()
+                                    ->title('Siswa belum punya akun User terkait')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            if (! $record->birth_date) {
+                                Notification::make()
+                                    ->title('Tanggal lahir siswa belum diisi')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $record->user->forceFill([
+                                'password' => bcrypt($record->birth_date->format('Y-m-d')),
+                            ])->save();
+
+                            Notification::make()
+                                ->title('Password berhasil di-reset')
+                                ->body("Password baru: {$record->birth_date->format('Y-m-d')}")
+                                ->success()
+                                ->send();
+                        }),
                     DeleteAction::make(),
                 ]),
             ])
