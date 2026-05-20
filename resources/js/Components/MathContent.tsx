@@ -1,3 +1,4 @@
+import DOMPurify from 'dompurify';
 import katex from 'katex';
 import { useEffect, useRef } from 'react';
 
@@ -109,12 +110,29 @@ function findNextDelimiter(text: string, from: number) {
     return best;
 }
 
+/**
+ * DOMPurify config — backend (Filament RichEditor + Trix) sudah menghasilkan HTML
+ * yang relatif bersih, tapi kita tetap defense-in-depth supaya konten yang masuk
+ * dari sumber lain (mis. import seeder, riwayat lama) tetap aman dari XSS.
+ *
+ * - `FORBID_TAGS`: blok script, style, dan elemen interaktif yang tidak relevan.
+ * - `FORBID_ATTR`: blok semua event handler (on*) dan attribute berbahaya.
+ *   DOMPurify default sudah strip ini, tapi kita explicit-kan untuk dokumentasi.
+ */
+const SANITIZE_CONFIG: Parameters<typeof DOMPurify.sanitize>[1] = {
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button'],
+    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur', 'formaction'],
+    // Izinkan target="_blank" + rel; backend pakai untuk tautan eksternal.
+    ADD_ATTR: ['target', 'rel'],
+};
+
 export default function MathContent({ html, className }: Props) {
     const ref = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (!ref.current) return;
-        ref.current.innerHTML = html;
+        const safe = DOMPurify.sanitize(html ?? '', SANITIZE_CONFIG);
+        ref.current.innerHTML = safe;
         renderMathInNode(ref.current);
     }, [html]);
 

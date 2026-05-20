@@ -34,6 +34,7 @@ export interface AssignmentDetail {
 export interface AssignmentSubmission {
     id: string;
     content: string | null;
+    link_url: string | null;
     submitted_at: string | null;
     score: number | null;
     feedback: string | null;

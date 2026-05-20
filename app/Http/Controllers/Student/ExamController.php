@@ -23,11 +23,22 @@ class ExamController extends Controller
      * Start screen exam (sebelum klik Mulai).
      * Untuk mode `online_quiz`: tampilkan info exam + tombol mulai/lanjutkan/lihat hasil.
      * Untuk mode `submission`: tampilkan form pengumpulan + submission lama (kalau ada).
+     *
+     * Optimasi UX: kalau siswa sudah submit session online_quiz, langsung antar
+     * ke halaman hasil — jangan tampilkan start screen yang isinya tombol
+     * "Lihat Hasil" lagi. Akses langsung lewat URL ditolak supaya konsisten.
      */
-    public function show(string $material, string $exam, GetStudentExam $action): Response
+    public function show(string $material, string $exam, GetStudentExam $action): Response|RedirectResponse
     {
         $student = $this->student();
         $payload = $action->handle($student, $material, $exam);
+
+        if ($payload['exam']['mode'] === 'online_quiz'
+            && $payload['session']
+            && $payload['session']['submitted_at']
+        ) {
+            return redirect()->route('student.exams.result', ['session' => $payload['session']['id']]);
+        }
 
         $page = $payload['exam']['mode'] === 'online_quiz' ? 'Exam/ExamStart' : 'Exam/ExamSubmissionForm';
 

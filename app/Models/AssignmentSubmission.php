@@ -24,6 +24,7 @@ class AssignmentSubmission extends Model implements HasMedia
         'assignment_id',
         'student_id',
         'content',
+        'link_url',
         'submitted_at',
         'score',
         'feedback',
@@ -42,7 +43,7 @@ class AssignmentSubmission extends Model implements HasMedia
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['content', 'submitted_at', 'score', 'feedback', 'graded_at'])
+            ->logOnly(['content', 'link_url', 'submitted_at', 'score', 'feedback', 'graded_at'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

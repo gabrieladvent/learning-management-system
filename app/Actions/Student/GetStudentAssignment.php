@@ -208,6 +208,7 @@ class GetStudentAssignment
         return [
             'id' => $submission->id,
             'content' => $submission->content,
+            'link_url' => $submission->link_url,
             'submitted_at' => $submission->submitted_at?->toIso8601String(),
             'score' => $submission->score !== null ? (float) $submission->score : null,
             'feedback' => $submission->feedback,

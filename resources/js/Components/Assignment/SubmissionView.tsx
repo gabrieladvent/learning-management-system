@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Lock, Pencil } from 'lucide-react';
+import { Link as LinkIcon, Lock, Pencil } from 'lucide-react';
 import { FileCard, MathContent } from '@/Components';
 import { fadeUp, staggerContainer } from '@/lib/motion';
 import type { AssignmentSubmission } from './assignment.type';
@@ -15,6 +15,7 @@ interface Props {
 export default function SubmissionView({ submission, canEdit, lockReason, onEdit }: Props) {
     const hasContent = !!submission.content?.trim();
     const hasFiles = submission.files.length > 0;
+    const hasLink = !!submission.link_url;
 
     return (
         <div className="space-y-5">
@@ -68,6 +69,23 @@ export default function SubmissionView({ submission, canEdit, lockReason, onEdit
                 </div>
             )}
 
+            {hasLink && (
+                <div>
+                    <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Tautan
+                    </div>
+                    <a
+                        href={submission.link_url ?? '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-600 hover:text-sky-700"
+                    >
+                        <LinkIcon className="h-3.5 w-3.5" />
+                        {submission.link_url}
+                    </a>
+                </div>
+            )}
+
             {hasFiles && (
                 <div>
                     <div className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -88,9 +106,9 @@ export default function SubmissionView({ submission, canEdit, lockReason, onEdit
                 </div>
             )}
 
-            {!hasContent && !hasFiles && (
+            {!hasContent && !hasFiles && !hasLink && (
                 <p className="text-sm text-slate-500">
-                    Submission tidak berisi jawaban tertulis maupun lampiran.
+                    Submission tidak berisi jawaban tertulis, tautan, maupun lampiran.
                 </p>
             )}
         </div>

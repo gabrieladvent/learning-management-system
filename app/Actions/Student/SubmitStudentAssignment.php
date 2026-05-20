@@ -34,6 +34,7 @@ class SubmitStudentAssignment
         string $materialId,
         string $assignmentId,
         ?string $content,
+        ?string $linkUrl,
         array $newFiles,
         array $removedFileIds,
     ): AssignmentSubmission {
@@ -48,7 +49,7 @@ class SubmitStudentAssignment
 
         $this->validateFiles($assignment, $newFiles);
 
-        return DB::transaction(function () use ($assignment, $student, $content, $newFiles, $removedFileIds) {
+        return DB::transaction(function () use ($assignment, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
             // withTrashed: unique(assignment_id, student_id) tidak respect soft-delete di DB level.
             // Tanpa ini, submission yang pernah dihapus admin → siswa tidak bisa submit lagi (1062).
             $submission = AssignmentSubmission::withTrashed()
@@ -71,6 +72,7 @@ class SubmitStudentAssignment
             // Trait LogsActivity di model akan otomatis mencatat event 'created'/'updated'
             // dengan causer = student aktif (lewat CauserResolver di AppServiceProvider).
             $submission->content = $content;
+            $submission->link_url = $linkUrl;
             $submission->submitted_at = now();
             $submission->save();
 

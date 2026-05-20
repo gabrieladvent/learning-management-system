@@ -264,6 +264,14 @@ class GetStudentExam
     /**
      * Timeline submission ujian (mode submission).
      *
+     * Strategi:
+     *  - Event "Dinilai oleh guru" ditarik dari `submission.graded_at` (timestamp
+     *    eksplisit yang di-set oleh booted hook saat score pertama kali terisi).
+     *    Lebih akurat dibanding mengandalkan activity log: kalau guru edit feedback
+     *    setelah penilaian, activity log akan punya event update score=null→x lalu
+     *    update feedback — gak relevan untuk timeline siswa.
+     *  - Event "create" & "update" tetap diambil dari activity log (causer = student).
+     *
      * @return array<int, array{id:string,title:string,description:string,occurred_at:string,variant:string}>
      */
     private function buildSubmissionActivities(ExamSubmission $submission, Exam $exam): array
@@ -289,7 +297,9 @@ class GetStudentExam
 
         foreach ($activities as $activity) {
             $attrs = $activity->attribute_changes?->get('attributes') ?? [];
-            $scoreChanged = is_array($attrs) && array_key_exists('score', $attrs) && $attrs['score'] !== null;
+            // "Dinilai" di-handle terpisah lewat $submission->graded_at — skip di sini
+            // supaya tidak dobel saat guru update feedback/score beberapa kali.
+            $scoreChanged = is_array($attrs) && array_key_exists('score', $attrs);
 
             if ($activity->event === 'created') {
                 $items[] = [
@@ -304,16 +314,6 @@ class GetStudentExam
             }
 
             if ($scoreChanged) {
-                $max = $exam->max_score;
-                $score = $attrs['score'];
-                $items[] = [
-                    'id' => 'activity-'.$activity->id,
-                    'title' => 'Dinilai oleh guru',
-                    'description' => 'Nilai: '.rtrim(rtrim((string) $score, '0'), '.').($max ? ' / '.rtrim(rtrim((string) $max, '0'), '.') : ''),
-                    'occurred_at' => $activity->created_at?->toIso8601String() ?? now()->toIso8601String(),
-                    'variant' => 'grade',
-                ];
-
                 continue;
             }
 
@@ -323,6 +323,17 @@ class GetStudentExam
                 'description' => 'Kamu memperbarui jawaban atau lampiran.',
                 'occurred_at' => $activity->created_at?->toIso8601String() ?? now()->toIso8601String(),
                 'variant' => 'update',
+            ];
+        }
+
+        if ($submission->graded_at && $submission->score !== null) {
+            $max = $exam->max_score;
+            $items[] = [
+                'id' => 'submission-graded',
+                'title' => 'Dinilai oleh guru',
+                'description' => 'Nilai: '.rtrim(rtrim((string) $submission->score, '0'), '.').($max ? ' / '.rtrim(rtrim((string) $max, '0'), '.') : ''),
+                'occurred_at' => $submission->graded_at->toIso8601String(),
+                'variant' => 'grade',
             ];
         }
 

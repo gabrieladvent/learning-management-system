@@ -30,6 +30,7 @@ class AssignmentController extends Controller
     ): RedirectResponse {
         $data = $request->validate([
             'content' => ['nullable', 'string', 'max:20000'],
+            'link_url' => ['nullable', 'url', 'max:2048'],
             'files' => ['nullable', 'array'],
             'files.*' => ['file'],
             'removed_file_ids' => ['nullable', 'array'],
@@ -44,6 +45,7 @@ class AssignmentController extends Controller
             materialId: $material,
             assignmentId: $assignment,
             content: $data['content'] ?? null,
+            linkUrl: $data['link_url'] ?? null,
             newFiles: $data['files'] ?? [],
             removedFileIds: $data['removed_file_ids'] ?? [],
         );

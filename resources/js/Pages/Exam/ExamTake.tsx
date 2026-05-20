@@ -73,6 +73,23 @@ export default function ExamTake() {
         [answers],
     );
 
+    /**
+     * Deteksi server rejection yang menandakan session sudah disubmit (mis. di tab
+     * lain, atau auto-submit dari timer di backend lain). Saat itu terjadi, tidak
+     * ada gunanya retry — kita redirect siswa ke halaman hasil supaya tidak stuck
+     * mengulang save yang selalu gagal.
+     */
+    const handleSessionClosed = useCallback(
+        (reason: string) => {
+            toast.info(reason);
+            // Stop semua pending save & redirect ke result.
+            Object.values(pendingTimersRef.current).forEach((id) => clearTimeout(id));
+            pendingTimersRef.current = {};
+            router.visit(route('student.exams.result', { session: session.id }));
+        },
+        [session.id],
+    );
+
     const persistAnswer = useCallback(
         (questionId: string, value: string | null) => {
             setSaveStatus('saving');
@@ -84,14 +101,26 @@ export default function ExamTake() {
                 .then(() => setSaveStatus('saved'))
                 .catch((err) => {
                     setSaveStatus('error');
+                    const sessionError = err?.response?.data?.errors?.session?.[0] as string | undefined;
                     const message =
-                        err?.response?.data?.errors?.session?.[0] ??
+                        sessionError ??
                         err?.response?.data?.message ??
                         'Gagal menyimpan jawaban — periksa koneksi.';
+
+                    // Match pesan dari SaveExamAnswer.php:
+                    //  - "Ujian sudah dikumpulkan, tidak bisa diubah lagi."
+                    //  - "Waktu ujian sudah habis."
+                    // Kedua kondisi = session closed, antar siswa ke hasil supaya tidak stuck.
+                    if (sessionError && (sessionError.includes('dikumpulkan') || sessionError.includes('habis'))) {
+                        handleSessionClosed(sessionError);
+
+                        return;
+                    }
+
                     toast.error(message);
                 });
         },
-        [session.id],
+        [session.id, handleSessionClosed],
     );
 
     const scheduleSave = useCallback(
