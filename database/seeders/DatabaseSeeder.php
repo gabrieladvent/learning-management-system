@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             ClassroomSubjectSeeder::class,
             MaterialSeeder::class,
             AssignmentSeeder::class,
+            ExamSeeder::class,
         ]);
     }
 }

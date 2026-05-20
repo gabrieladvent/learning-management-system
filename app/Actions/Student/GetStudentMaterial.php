@@ -4,7 +4,8 @@ namespace App\Actions\Student;
 
 use App\Models\Assignment;
 use App\Models\ClassroomSubject;
-use App\Models\Material;
+use App\Models\Exam;
+use App\Models\ExamSession;
 use App\Models\Student;
 use Illuminate\Database\Eloquent\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -66,6 +67,21 @@ class GetStudentMaterial
             ->values()
             ->all();
 
+        $exams = $material->exams()
+            ->where('is_published', true)
+            ->where(fn (Builder $q) => $q->whereNull('available_from')->orWhere('available_from', '<=', now()))
+            ->where(fn (Builder $q) => $q->whereNull('available_until')->orWhere('available_until', '>=', now()))
+            ->with([
+                'sessions' => fn ($q) => $q->where('student_id', $student->id),
+                'submissions' => fn ($q) => $q->where('student_id', $student->id),
+            ])
+            ->withCount('questions')
+            ->orderBy('order')
+            ->get()
+            ->map(fn (Exam $exam) => $this->mapExam($exam))
+            ->values()
+            ->all();
+
         return [
             'course' => [
                 'id' => $course->id,
@@ -86,6 +102,7 @@ class GetStudentMaterial
                 'created_at' => $material->created_at?->toIso8601String(),
                 'files' => $files,
                 'assignments' => $assignments,
+                'exams' => $exams,
             ],
         ];
     }
@@ -118,5 +135,77 @@ class GetStudentMaterial
             'submitted_at' => $submission?->submitted_at?->toIso8601String(),
             'score' => $submission && $submission->score !== null ? (float) $submission->score : null,
         ];
+    }
+
+    /**
+     * Bentuk ringkasan exam + status session/submission siswa untuk list card.
+     *
+     * Status:
+     *  - in_progress : ada session, sudah started, belum submitted
+     *  - submitted   : sudah submitted (online_quiz) atau ada submission (submission mode), score belum diisi
+     *  - graded      : score sudah diisi
+     *  - belum_mulai : default
+     *
+     * @return array<string, mixed>
+     */
+    private function mapExam(Exam $exam): array
+    {
+        $mode = $exam->mode->value;
+        $session = $exam->sessions->first();
+        $submission = $exam->submissions->first();
+
+        $status = 'belum_mulai';
+        $totalScore = null;
+        $submittedAt = null;
+
+        if ($mode === 'online_quiz') {
+            if ($session) {
+                if ($session->submitted_at) {
+                    $status = $session->total_score !== null && $exam->questions_count > 0 && $this->isFullyGraded($session)
+                        ? 'graded'
+                        : 'submitted';
+                    $submittedAt = $session->submitted_at->toIso8601String();
+                    $totalScore = $session->total_score !== null ? (float) $session->total_score : null;
+                } elseif ($session->started_at) {
+                    $status = 'in_progress';
+                }
+            }
+        } else {
+            if ($submission) {
+                if ($submission->score !== null) {
+                    $status = 'graded';
+                    $totalScore = (float) $submission->score;
+                } elseif ($submission->submitted_at) {
+                    $status = 'submitted';
+                }
+                $submittedAt = $submission->submitted_at?->toIso8601String();
+            }
+        }
+
+        return [
+            'id' => $exam->id,
+            'title' => $exam->title,
+            'description' => $exam->description ? str($exam->description)->stripTags()->limit(160)->toString() : null,
+            'mode' => $mode,
+            'starts_at' => $exam->starts_at?->toIso8601String(),
+            'duration_minutes' => $exam->duration_minutes,
+            'max_score' => $exam->max_score !== null ? (float) $exam->max_score : null,
+            'questions_count' => (int) $exam->questions_count,
+            'status' => $status,
+            'session_id' => $session?->id,
+            'submitted_at' => $submittedAt,
+            'total_score' => $totalScore,
+        ];
+    }
+
+    /**
+     * Exam dianggap fully-graded ketika tidak ada essay yang masih null.
+     * Auto-grader hanya menilai MC + short_answer; essay menunggu guru.
+     */
+    private function isFullyGraded(ExamSession $session): bool
+    {
+        return ! $session->answers()
+            ->whereNull('score')
+            ->exists();
     }
 }

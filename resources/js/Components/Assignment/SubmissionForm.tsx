@@ -1,7 +1,8 @@
 import { useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { CloudUpload, FileText, Loader2, Send, Trash2, X } from 'lucide-react';
+import { CloudUpload, FileText, Link as LinkIcon, Loader2, Send, Trash2, X } from 'lucide-react';
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from 'react';
+import { TrixEditor } from '@/Components';
 import type { MaterialFile } from '@/Components/FileCard';
 import { toast } from '@/lib';
 import type { AssignmentDetail, AssignmentSubmission } from './assignment.type';
@@ -37,10 +38,12 @@ export default function SubmissionForm({ materialId, assignment, submission, dis
 
     const { data, setData, post, processing, errors, reset } = useForm<{
         content: string;
+        link_url: string;
         files: File[];
         removed_file_ids: string[];
     }>({
         content: submission?.content ?? '',
+        link_url: submission?.link_url ?? '',
         files: initialFiles,
         removed_file_ids: [],
     });
@@ -116,19 +119,37 @@ export default function SubmissionForm({ materialId, assignment, submission, dis
     return (
         <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-                <label htmlFor="content" className="mb-1.5 block text-sm font-medium text-slate-700">
+                <label className="mb-1.5 block text-sm font-medium text-slate-700">
                     Jawaban / Esai
                 </label>
-                <textarea
-                    id="content"
-                    rows={8}
+                <TrixEditor
                     value={data.content}
-                    onChange={(e) => setData('content', e.target.value)}
+                    onChange={(html) => setData('content', html)}
                     disabled={disabled || processing}
-                    placeholder="Tulis jawabanmu di sini. Boleh sertakan link / tautan referensi."
-                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 disabled:bg-slate-50 disabled:text-slate-500"
+                    placeholder="Tulis jawabanmu di sini."
+                    aria-label="Jawaban tugas"
+                    minHeightClass="min-h-[200px]"
                 />
                 {errors.content && <p className="mt-1 text-xs text-rose-600">{errors.content}</p>}
+            </div>
+
+            <div>
+                <label htmlFor="link_url" className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Tautan referensi (opsional)
+                </label>
+                <div className="relative">
+                    <LinkIcon className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <input
+                        id="link_url"
+                        type="url"
+                        value={data.link_url}
+                        onChange={(e) => setData('link_url', e.target.value)}
+                        disabled={disabled || processing}
+                        placeholder="https://..."
+                        className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100 disabled:bg-slate-50"
+                    />
+                </div>
+                {errors.link_url && <p className="mt-1 text-xs text-rose-600">{errors.link_url}</p>}
             </div>
 
             <div>

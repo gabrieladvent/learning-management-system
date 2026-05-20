@@ -2,8 +2,8 @@
 
 namespace App\Providers\Filament;
 
+use App\Http\Middleware\TeacherPanelAuthenticate;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
-use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -62,7 +62,8 @@ class TeacherPanelProvider extends PanelProvider
                 fn (): string => Blade::render('<x-katex-init />'),
             )
             ->authMiddleware([
-                Authenticate::class,
+                // Custom: redirect siswa yang nyasar ke /teacher kembali ke dashboard siswa.
+                TeacherPanelAuthenticate::class,
             ]);
     }
 }
