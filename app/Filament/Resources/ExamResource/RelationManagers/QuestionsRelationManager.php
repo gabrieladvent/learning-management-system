@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ExamResource\RelationManagers;
 
 use App\Models\Enums\ExamModeEnum;
 use App\Models\Enums\QuestionTypeEnum;
+use App\Services\ExamGrader;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
@@ -12,7 +13,9 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Actions\CreateAction;
 use Filament\Tables\Actions\DeleteAction;
@@ -109,6 +112,32 @@ class QuestionsRelationManager extends RelationManager
                             ['label' => 'C', 'text' => null],
                             ['label' => 'D', 'text' => null],
                         ])
+                        ->formatStateUsing(function ($state) {
+                            if (! is_array($state) || empty($state)) {
+                                return [
+                                    ['label' => 'A', 'text' => null],
+                                    ['label' => 'B', 'text' => null],
+                                    ['label' => 'C', 'text' => null],
+                                    ['label' => 'D', 'text' => null],
+                                ];
+                            }
+
+                            $first = reset($state);
+                            if (is_array($first) && array_key_exists('label', $first)) {
+                                return $state;
+                            }
+
+                            return collect($state)->map(fn ($text, $label) => [
+                                'label' => (string) $label,
+                                'text' => $text,
+                            ])->values()->all();
+                        })
+                        ->dehydrateStateUsing(function ($state) {
+                            return collect($state ?? [])
+                                ->filter(fn ($row) => filled($row['label'] ?? null))
+                                ->mapWithKeys(fn ($row) => [$row['label'] => $row['text'] ?? ''])
+                                ->all();
+                        })
                         ->reorderableWithButtons()
                         ->columnSpanFull(),
 
@@ -159,6 +188,16 @@ class QuestionsRelationManager extends RelationManager
                         default => 'gray',
                     }),
 
+                TextColumn::make('correct_answer')
+                    ->label('Kunci')
+                    ->placeholder('—')
+                    ->badge()
+                    ->color(fn ($record) => $record->type === QuestionTypeEnum::Essay ? 'gray' : 'success')
+                    ->formatStateUsing(fn ($state, $record) => $record->type === QuestionTypeEnum::Essay
+                        ? 'Manual'
+                        : ($state ?? '—'))
+                    ->toggleable(),
+
                 TextColumn::make('score')
                     ->label('Bobot')
                     ->alignCenter()
@@ -168,6 +207,30 @@ class QuestionsRelationManager extends RelationManager
             ->reorderable('order')
             ->headerActions([
                 CreateAction::make()->label('Tambah Soal'),
+                Action::make('regrade')
+                    ->label('Hitung Ulang Nilai')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalDescription('Auto-grader akan menghitung ulang skor Multiple Choice + Short Answer untuk semua sesi yang sudah submitted. Skor essay yang sudah dinilai guru tidak akan diubah.')
+                    ->action(function () {
+                        $exam = $this->getOwnerRecord();
+                        $grader = app(ExamGrader::class);
+                        $count = 0;
+
+                        $exam->sessions()
+                            ->whereNotNull('submitted_at')
+                            ->get()
+                            ->each(function ($session) use ($grader, &$count) {
+                                $grader->grade($session);
+                                $count++;
+                            });
+
+                        Notification::make()
+                            ->title("$count sesi dihitung ulang")
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->actions([
                 ActionGroup::make([

@@ -4,6 +4,7 @@ namespace App\Actions\Student;
 
 use App\Models\ExamSession;
 use App\Models\Student;
+use App\Notifications\TeacherSubmissionAlert;
 use App\Services\ExamGrader;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -47,11 +48,15 @@ class SubmitExamSession
             ]);
         }
 
-        return DB::transaction(function () use ($session) {
+        $graded = DB::transaction(function () use ($session) {
             $session->submitted_at = now();
             $session->save();
 
             return $this->grader->grade($session);
         });
+
+        TeacherSubmissionAlert::forExamSession($graded->load('exam.material.classroomSubject.teacher', 'student'));
+
+        return $graded;
     }
 }

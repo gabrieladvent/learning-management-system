@@ -342,7 +342,20 @@ class ExamResource extends Resource
                     }),
                 TextColumn::make('starts_at')
                     ->label('Mulai')
-                    ->dateTime('d M Y, H:i'),
+                    ->dateTime('d M Y, H:i')
+                    ->sortable(),
+                TextColumn::make('sessions_count')
+                    ->label('Sesi')
+                    ->counts('sessions')
+                    ->badge()
+                    ->color(fn ($state) => $state > 0 ? 'success' : 'gray')
+                    ->toggleable(),
+                TextColumn::make('submissions_count')
+                    ->label('Pengumpulan')
+                    ->counts('submissions')
+                    ->badge()
+                    ->color(fn ($state) => $state > 0 ? 'success' : 'gray')
+                    ->toggleable(),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()

@@ -6,6 +6,7 @@ use App\Models\Exam;
 use App\Models\ExamSubmission;
 use App\Models\Material;
 use App\Models\Student;
+use App\Notifications\TeacherSubmissionAlert;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +61,7 @@ class SubmitExamSubmission
 
         $this->validateFiles($exam, $newFiles);
 
-        return DB::transaction(function () use ($exam, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
+        $submission = DB::transaction(function () use ($exam, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
             $submission = ExamSubmission::withTrashed()
                 ->firstOrNew([
                     'exam_id' => $exam->id,
@@ -94,6 +95,10 @@ class SubmitExamSubmission
 
             return $submission->fresh();
         });
+
+        TeacherSubmissionAlert::forExamSubmission($submission->load('exam.material.classroomSubject.teacher', 'student'));
+
+        return $submission;
     }
 
     private function resolveMaterial(Student $student, string $materialId): Material

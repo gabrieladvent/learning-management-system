@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use App\Models\Material;
 use App\Models\Student;
+use App\Notifications\TeacherSubmissionAlert;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +50,7 @@ class SubmitStudentAssignment
 
         $this->validateFiles($assignment, $newFiles);
 
-        return DB::transaction(function () use ($assignment, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
+        $submission = DB::transaction(function () use ($assignment, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
             // withTrashed: unique(assignment_id, student_id) tidak respect soft-delete di DB level.
             // Tanpa ini, submission yang pernah dihapus admin → siswa tidak bisa submit lagi (1062).
             $submission = AssignmentSubmission::withTrashed()
@@ -88,6 +89,10 @@ class SubmitStudentAssignment
 
             return $submission->fresh();
         });
+
+        TeacherSubmissionAlert::forAssignment($submission->load('assignment.material.classroomSubject.teacher', 'student'));
+
+        return $submission;
     }
 
     private function resolveMaterial(Student $student, string $materialId): Material

@@ -100,6 +100,7 @@ export type ExamTakePageProps = {
         started_at: string | null;
         submitted_at: string | null;
         expires_at: string | null;
+        total_score: number | null;
     };
     questions: ExamQuestionItem[];
     answers: Record<string, string | null>;

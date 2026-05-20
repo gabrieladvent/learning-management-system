@@ -24,6 +24,8 @@ use Filament\Tables\Actions\EditAction;
 use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
@@ -285,10 +287,32 @@ class AssignmentResource extends Resource
                     ->searchable(),
                 TextColumn::make('deadline')
                     ->label('Deadline')
-                    ->dateTime('d M Y, H:i'),
+                    ->dateTime('d M Y, H:i')
+                    ->sortable(),
+                TextColumn::make('submissions_count')
+                    ->label('Pengumpulan')
+                    ->counts('submissions')
+                    ->badge()
+                    ->color(fn ($state) => $state > 0 ? 'success' : 'gray')
+                    ->toggleable(),
                 IconColumn::make('is_published')
                     ->label('Publish')
                     ->boolean(),
+            ])
+            ->filters([
+                Filter::make('overdue')
+                    ->label('Sudah Lewat Deadline')
+                    ->query(fn (Builder $query) => $query->where('deadline', '<', now())),
+
+                Filter::make('this_week')
+                    ->label('Deadline Minggu Ini')
+                    ->query(fn (Builder $query) => $query->whereBetween('deadline', [
+                        now()->startOfWeek(),
+                        now()->endOfWeek(),
+                    ])),
+
+                TernaryFilter::make('is_published')
+                    ->label('Status Publish'),
             ])
             ->actions([
                 ViewAction::make(),
