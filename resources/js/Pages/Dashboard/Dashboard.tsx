@@ -23,6 +23,7 @@ export default function Dashboard() {
                 classroomName={meta.classroom_name}
                 academicYear={meta.academic_year}
                 courseCount={courses.length}
+                inspire={meta.inspire}
             />
 
             <section className="mb-10">
