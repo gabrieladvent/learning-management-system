@@ -11,6 +11,7 @@ export interface Course {
 export type DashboardMeta = {
     classroom_name: string | null;
     academic_year: string | null;
+    inspire: string;
 };
 
 export type DashboardPageProps = {

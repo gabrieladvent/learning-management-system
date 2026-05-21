@@ -22,6 +22,7 @@ class ExamSession extends Model
         'started_at',
         'submitted_at',
         'total_score',
+        'submission_reason',
     ];
 
     protected function casts(): array
@@ -36,7 +37,7 @@ class ExamSession extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['started_at', 'submitted_at', 'total_score'])
+            ->logOnly(['started_at', 'submitted_at', 'total_score', 'submission_reason'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }

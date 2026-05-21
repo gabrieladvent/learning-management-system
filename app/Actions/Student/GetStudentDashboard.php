@@ -3,13 +3,14 @@
 namespace App\Actions\Student;
 
 use App\Models\Student;
+use Illuminate\Foundation\Inspiring;
 
 class GetStudentDashboard
 {
     /**
      * @return array{
      *     courses: array<int, array<string, mixed>>,
-     *     meta: array{classroom_name: ?string, academic_year: ?string},
+     *     meta: array{classroom_name: ?string, academic_year: ?string, inspire: string},
      * }
      */
     public function handle(Student $student): array
@@ -39,7 +40,15 @@ class GetStudentDashboard
             'meta' => [
                 'classroom_name' => $primaryClassroom?->name,
                 'academic_year' => $primaryClassroom?->academic_year,
+                'inspire' => $this->cleanQuote(Inspiring::quote()),
             ],
         ];
+    }
+
+    private function cleanQuote(string $raw): string
+    {
+        $stripped = preg_replace('/<[^>]+>/', '', $raw) ?? $raw;
+
+        return trim(preg_replace('/\s+/', ' ', $stripped) ?? $stripped);
     }
 }

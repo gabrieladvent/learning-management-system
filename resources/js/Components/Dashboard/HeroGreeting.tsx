@@ -6,6 +6,7 @@ interface Props {
     classroomName: string | null;
     academicYear: string | null;
     courseCount: number;
+    inspire: string;
 }
 
 const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
@@ -25,7 +26,7 @@ function formatToday(d: Date): string {
     return `${HARI[d.getDay()]}, ${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-export default function HeroGreeting({ name, classroomName, academicYear, courseCount }: Props) {
+export default function HeroGreeting({ name, classroomName, academicYear, courseCount, inspire }: Props) {
     const now = new Date();
     const greeting = greetByHour(now.getHours());
 
@@ -48,8 +49,8 @@ export default function HeroGreeting({ name, classroomName, academicYear, course
                     <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
                         {greeting}, <span className="text-sky-700">{name}</span>
                     </h1>
-                    <p className="mt-1.5 max-w-md text-sm text-slate-600">
-                        Semoga harimu produktif. Lanjutkan belajar dari mata pelajaran di bawah.
+                    <p className="mt-1.5 max-w-md text-sm italic text-slate-600">
+                        &ldquo;{inspire}&rdquo;
                     </p>
                 </div>
 

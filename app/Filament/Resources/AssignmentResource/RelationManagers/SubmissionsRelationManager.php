@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\AssignmentResource\RelationManagers;
 
+use Carbon\CarbonInterface;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -39,9 +40,27 @@ class SubmissionsRelationManager extends RelationManager
                 ->schema([
                     Placeholder::make('submitted_at_view')
                         ->label('Dikumpulkan')
-                        ->content(fn ($record) => $record?->submitted_at
-                            ? $record->submitted_at->translatedFormat('l, d F Y · H:i')
-                            : '—'),
+                        ->content(function ($record) {
+                            if (! $record?->submitted_at) {
+                                return '—';
+                            }
+
+                            $text = $record->submitted_at->translatedFormat('l, d F Y · H:i');
+
+                            if ($record->is_late && $record->assignment?->deadline) {
+                                $late = $record->submitted_at->diffForHumans(
+                                    $record->assignment->deadline,
+                                    ['parts' => 2, 'syntax' => CarbonInterface::DIFF_ABSOLUTE]
+                                );
+
+                                return new HtmlString(
+                                    e($text)
+                                    .' <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">Terlambat '.e($late).'</span>'
+                                );
+                            }
+
+                            return $text;
+                        }),
 
                     Placeholder::make('content_view')
                         ->label('Esai / Jawaban Teks')
@@ -166,6 +185,29 @@ class SubmissionsRelationManager extends RelationManager
                     ->dateTime('d M Y, H:i')
                     ->placeholder('Belum mengumpulkan')
                     ->sortable(),
+
+                TextColumn::make('is_late')
+                    ->label('Ketepatan')
+                    ->badge()
+                    ->getStateUsing(function ($record) {
+                        if (! $record->submitted_at) {
+                            return null;
+                        }
+
+                        return $record->is_late ? 'Terlambat' : 'Tepat Waktu';
+                    })
+                    ->color(fn ($state) => $state === 'Terlambat' ? 'danger' : 'success')
+                    ->tooltip(function ($record) {
+                        if (! $record->submitted_at || ! $record->is_late || ! $record->assignment?->deadline) {
+                            return null;
+                        }
+
+                        return 'Terlambat '.$record->submitted_at->diffForHumans(
+                            $record->assignment->deadline,
+                            ['parts' => 2, 'syntax' => CarbonInterface::DIFF_ABSOLUTE]
+                        );
+                    })
+                    ->placeholder('—'),
 
                 IconColumn::make('submitted_at')
                     ->label('Status')

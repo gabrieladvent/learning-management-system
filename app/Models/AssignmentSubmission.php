@@ -29,6 +29,7 @@ class AssignmentSubmission extends Model implements HasMedia
         'score',
         'feedback',
         'graded_at',
+        'is_late',
     ];
 
     protected function casts(): array
@@ -37,13 +38,14 @@ class AssignmentSubmission extends Model implements HasMedia
             'submitted_at' => 'datetime',
             'score' => 'decimal:2',
             'graded_at' => 'datetime',
+            'is_late' => 'boolean',
         ];
     }
 
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['content', 'link_url', 'submitted_at', 'score', 'feedback', 'graded_at'])
+            ->logOnly(['content', 'link_url', 'submitted_at', 'score', 'feedback', 'graded_at', 'is_late'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges();
     }
