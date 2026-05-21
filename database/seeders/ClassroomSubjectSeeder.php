@@ -12,37 +12,48 @@ class ClassroomSubjectSeeder extends Seeder
 {
     public function run(): void
     {
-        $teacher = Teacher::first();
-        if (! $teacher) {
-            return;
-        }
+        // 3 mata pelajaran inti untuk skenario penelitian — masing-masing
+        // dipegang guru sesuai spesialisasinya, dan diberikan ke kedua kelas.
+        $subjectCodes = ['MTK', 'BIND', 'BING'];
 
-        // Cari mapel sesuai spesialisasi guru, fallback ke Matematika
-        $subject = Subject::where('name', $teacher->specialization)
-            ->orWhere('name', 'Matematika')
-            ->first();
+        $subjects = Subject::whereIn('code', $subjectCodes)->get()->keyBy('code');
+        $teachers = Teacher::all()->keyBy('specialization');
+        $classrooms = Classroom::whereIn('name', ['X IPA 1', 'X IPA 2'])->get();
 
-        if (! $subject) {
+        if ($classrooms->isEmpty() || $subjects->isEmpty() || $teachers->isEmpty()) {
             return;
         }
 
         $academicYear = date('Y').'/'.(date('Y') + 1);
 
-        // Assign mapel ke beberapa kelas untuk semester 1
-        $classrooms = Classroom::take(3)->get();
+        // Map: subject code → spesialisasi guru pemegang mapel.
+        $teacherForSubject = [
+            'MTK' => 'Matematika',
+            'BIND' => 'Bahasa Indonesia',
+            'BING' => 'Bahasa Inggris',
+        ];
 
         foreach ($classrooms as $classroom) {
-            ClassroomSubject::firstOrCreate(
-                [
-                    'classroom_id' => $classroom->id,
-                    'subject_id' => $subject->id,
-                    'academic_year' => $academicYear,
-                    'semester' => 1,
-                ],
-                [
-                    'teacher_id' => $teacher->id,
-                ]
-            );
+            foreach ($subjectCodes as $code) {
+                $subject = $subjects->get($code);
+                $teacher = $teachers->get($teacherForSubject[$code]) ?? $teachers->first();
+
+                if (! $subject || ! $teacher) {
+                    continue;
+                }
+
+                ClassroomSubject::firstOrCreate(
+                    [
+                        'classroom_id' => $classroom->id,
+                        'subject_id' => $subject->id,
+                        'academic_year' => $academicYear,
+                        'semester' => 1,
+                    ],
+                    [
+                        'teacher_id' => $teacher->id,
+                    ]
+                );
+            }
         }
     }
 }

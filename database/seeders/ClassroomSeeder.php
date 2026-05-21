@@ -12,19 +12,26 @@ class ClassroomSeeder extends Seeder
     public function run(): void
     {
         $school = School::first();
-        $teacher = Teacher::first();
-
-        if (! $school || ! $teacher) {
+        if (! $school) {
             return;
         }
 
         $academicYear = date('Y').'/'.(date('Y') + 1);
 
+        // Wali kelas: dipasangkan berdasarkan spesialisasi guru, supaya saat
+        // siswa diundang ke kelas, wali kelas-nya sudah jelas.
+        $homeroomA = Teacher::where('specialization', 'Matematika')->first()
+            ?? Teacher::first();
+        $homeroomB = Teacher::where('specialization', 'Bahasa Indonesia')->first()
+            ?? Teacher::first();
+
+        if (! $homeroomA || ! $homeroomB) {
+            return;
+        }
+
         $classes = [
-            ['name' => 'X IPA 1',  'grade_level' => 'X'],
-            ['name' => 'X IPA 2',  'grade_level' => 'X'],
-            ['name' => 'XI IPA 1', 'grade_level' => 'XI'],
-            ['name' => 'XII IPA 1', 'grade_level' => 'XII'],
+            ['name' => 'X IPA 1', 'grade_level' => 'X', 'teacher_id' => $homeroomA->id],
+            ['name' => 'X IPA 2', 'grade_level' => 'X', 'teacher_id' => $homeroomB->id],
         ];
 
         foreach ($classes as $class) {
@@ -35,7 +42,7 @@ class ClassroomSeeder extends Seeder
                     'academic_year' => $academicYear,
                 ],
                 [
-                    'teacher_id' => $teacher->id,
+                    'teacher_id' => $class['teacher_id'],
                     'grade_level' => $class['grade_level'],
                     'is_active' => true,
                 ]
