@@ -4,12 +4,14 @@ namespace App\Models;
 
 use App\Models\Enums\ExamModeEnum;
 use App\Models\Enums\ExamStatusEnum;
+use App\Notifications\StudentExamPublished;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Notification;
 
 class Exam extends Model
 {
@@ -59,6 +61,19 @@ class Exam extends Model
         static::creating(function (self $exam) {
             if (empty($exam->order)) {
                 $exam->order = (static::where('material_id', $exam->material_id)->max('order') ?? 0) + 1;
+            }
+        });
+
+        static::saved(function (self $exam) {
+            $wasPublished = (bool) ($exam->getOriginal('is_published') ?? false);
+            $isPublished = (bool) $exam->is_published;
+
+            if (! $wasPublished && $isPublished) {
+                $students = $exam->material?->classroomSubject?->classroom?->students;
+
+                if ($students && $students->isNotEmpty()) {
+                    Notification::send($students, new StudentExamPublished($exam));
+                }
             }
         });
     }

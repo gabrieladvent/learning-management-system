@@ -2,6 +2,8 @@ import { Link, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { BookOpen, LogOut } from 'lucide-react';
 import { PropsWithChildren } from 'react';
+import NotificationsDropdown from '@/Components/Layout/NotificationsDropdown';
+import TodoSidePanelButton from '@/Components/Layout/TodoSidePanelButton';
 import { PageProps } from '@/types';
 import { pageTransition, useFlashToast } from '@/lib';
 
@@ -34,14 +36,17 @@ export default function StudentLayout({ children, title }: PropsWithChildren<Pro
                     </Link>
 
                     {student && (
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
                             <div className="hidden text-right sm:block">
                                 <div className="text-sm font-medium leading-tight text-slate-900">
                                     {student.full_name}
                                 </div>
                                 <div className="text-xs text-slate-500">NISN {student.nisn}</div>
                             </div>
+                            <TodoSidePanelButton />
+                            <NotificationsDropdown />
                             <button
+                                type="button"
                                 onClick={handleLogout}
                                 className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
                                 aria-label="Logout"

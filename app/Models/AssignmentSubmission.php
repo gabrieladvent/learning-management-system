@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Notifications\StudentAssignmentGraded;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -60,6 +61,19 @@ class AssignmentSubmission extends Model implements HasMedia
         static::saving(function (self $submission) {
             if ($submission->isDirty('score') && $submission->score !== null && $submission->graded_at === null) {
                 $submission->graded_at = now();
+            }
+        });
+
+        static::saved(function (self $submission) {
+            $wasScored = $submission->getOriginal('score') !== null;
+            $isScoredNow = $submission->score !== null;
+
+            if (! $wasScored && $isScoredNow) {
+                $submission->loadMissing('student');
+
+                if ($submission->student) {
+                    $submission->student->notify(new StudentAssignmentGraded($submission));
+                }
             }
         });
     }

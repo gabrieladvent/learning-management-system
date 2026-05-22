@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\Student\BuildStudentTodoList;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
@@ -30,6 +32,7 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        /** @var Student|null $student */
         $student = Auth::guard('student')->user();
 
         $user = Auth::guard('web')->user();
@@ -49,6 +52,24 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            'notifications' => fn () => $student
+                ? [
+                    'unread_count' => $student->unreadNotifications()->count(),
+                    'recent' => $student->notifications()
+                        ->limit(10)
+                        ->get()
+                        ->map(fn ($notification) => [
+                            'id' => $notification->id,
+                            'data' => $notification->data,
+                            'read_at' => $notification->read_at?->toIso8601String(),
+                            'created_at' => $notification->created_at?->toIso8601String(),
+                        ])
+                        ->values(),
+                ]
+                : null,
+            'todo' => fn () => $student
+                ? app(BuildStudentTodoList::class)->handle($student)
+                : null,
         ];
     }
 }

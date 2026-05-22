@@ -42,6 +42,12 @@ class SubmitStudentAssignment
         $material = $this->resolveMaterial($student, $materialId);
         $assignment = $this->resolveAssignment($material, $assignmentId);
 
+        if ($assignment->deadline && now()->greaterThan($assignment->deadline)) {
+            throw ValidationException::withMessages([
+                'deadline' => 'Tugas sudah melewati deadline, tidak bisa dikumpulkan lagi.',
+            ]);
+        }
+
         $this->validateFiles($assignment, $newFiles);
 
         $submission = DB::transaction(function () use ($assignment, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
@@ -66,13 +72,10 @@ class SubmitStudentAssignment
 
             // Trait LogsActivity di model akan otomatis mencatat event 'created'/'updated'
             // dengan causer = student aktif (lewat CauserResolver di AppServiceProvider).
-            $submittedAt = now();
             $submission->content = $content;
             $submission->link_url = $linkUrl;
-            $submission->submitted_at = $submittedAt;
-            $submission->is_late = $assignment->deadline
-                ? $submittedAt->greaterThan($assignment->deadline)
-                : false;
+            $submission->submitted_at = now();
+            $submission->is_late = false;
             $submission->save();
 
             if ($removedFileIds !== []) {

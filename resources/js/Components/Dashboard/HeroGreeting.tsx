@@ -1,11 +1,14 @@
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { GraduationCap, Sparkles } from 'lucide-react';
 
 interface Props {
     name: string;
+    fullName: string;
     classroomName: string | null;
     academicYear: string | null;
     courseCount: number;
+    homeroomTeacherName: string | null;
+    semester: number | null;
     inspire: string;
 }
 
@@ -26,9 +29,26 @@ function formatToday(d: Date): string {
     return `${HARI[d.getDay()]}, ${d.getDate()} ${BULAN[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-export default function HeroGreeting({ name, classroomName, academicYear, courseCount, inspire }: Props) {
+function initialsOf(fullName: string): string {
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0]!.charAt(0).toUpperCase();
+    return (parts[0]!.charAt(0) + parts[parts.length - 1]!.charAt(0)).toUpperCase();
+}
+
+export default function HeroGreeting({
+    name,
+    fullName,
+    classroomName,
+    academicYear,
+    courseCount,
+    homeroomTeacherName,
+    semester,
+    inspire,
+}: Props) {
     const now = new Date();
     const greeting = greetByHour(now.getHours());
+    const initials = initialsOf(fullName);
 
     return (
         <motion.section
@@ -40,22 +60,39 @@ export default function HeroGreeting({ name, classroomName, academicYear, course
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_-20%,rgba(14,165,233,0.18),transparent_55%),radial-gradient(circle_at_-10%_120%,rgba(99,102,241,0.12),transparent_50%)]" />
 
             <div className="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-sky-100 backdrop-blur">
-                        <Sparkles className="h-3 w-3" />
-                        {formatToday(now)}
+                <div className="flex items-start gap-4">
+                    <div
+                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-sky-600 text-lg font-semibold text-white shadow-sm ring-2 ring-white"
+                        aria-hidden
+                    >
+                        {initials}
                     </div>
 
-                    <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
-                        {greeting}, <span className="text-sky-700">{name}</span>
-                    </h1>
-                    <p className="mt-1.5 max-w-md text-sm italic text-slate-600">
-                        &ldquo;{inspire}&rdquo;
-                    </p>
+                    <div>
+                        <div className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-xs font-medium text-sky-700 ring-1 ring-sky-100 backdrop-blur">
+                            <Sparkles className="h-3 w-3" />
+                            {formatToday(now)}
+                        </div>
+
+                        <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900 sm:text-3xl">
+                            {greeting}, <span className="text-sky-700">{name}</span>
+                        </h1>
+                        <p className="mt-1.5 max-w-md text-sm italic text-slate-600">
+                            &ldquo;{inspire}&rdquo;
+                        </p>
+
+                        {homeroomTeacherName && (
+                            <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-slate-500">
+                                <GraduationCap className="h-3.5 w-3.5" />
+                                Wali kelas: <span className="font-medium text-slate-700">{homeroomTeacherName}</span>
+                            </p>
+                        )}
+                    </div>
                 </div>
 
-                <dl className="grid grid-cols-3 gap-3 sm:gap-4">
+                <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                     <Stat label="Kelas" value={classroomName ?? '—'} />
+                    <Stat label="Semester" value={semester !== null ? String(semester) : '—'} />
                     <Stat label="T.A." value={academicYear ?? '—'} />
                     <Stat label="Mapel" value={String(courseCount)} />
                 </dl>
