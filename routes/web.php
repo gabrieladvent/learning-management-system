@@ -21,7 +21,7 @@ Route::prefix('student')->name('student.')->group(function () {
     Route::get('login', [StudentAuthController::class, 'showLogin'])->name('login');
     Route::post('login', [StudentAuthController::class, 'login'])->name('login.attempt');
 
-    Route::middleware('auth:student')->group(function () {
+    Route::middleware(['auth:student', 'throttle:60,1'])->group(function () {
         Route::get('dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
         Route::get('courses/{course}', [StudentCourseController::class, 'show'])->name('courses.show');
         Route::post('courses/{course}/pin', [StudentCourseController::class, 'pin'])->name('courses.pin');
@@ -35,7 +35,6 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::post('materials/{material}/exams/{exam}/start', [StudentExamController::class, 'start'])->name('exams.start');
         Route::post('materials/{material}/exams/{exam}/submit-submission', [StudentExamController::class, 'submitSubmission'])->name('exams.submission.submit');
         Route::get('exams/sessions/{session}', [StudentExamController::class, 'take'])->name('exams.take');
-        Route::post('exams/sessions/{session}/answer', [StudentExamController::class, 'answer'])->name('exams.answer');
         Route::post('exams/sessions/{session}/submit', [StudentExamController::class, 'submit'])->name('exams.submit');
         Route::get('exams/sessions/{session}/result', [StudentExamController::class, 'result'])->name('exams.result');
 
@@ -44,6 +43,11 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::post('notifications/{id}/read', [StudentNotificationController::class, 'markRead'])->name('notifications.read');
 
         Route::post('logout', [StudentAuthController::class, 'logout'])->name('logout');
+    });
+
+    // Auto-save jawaban ujian — throttle lebih longgar karena bisa fire tiap beberapa detik.
+    Route::middleware(['auth:student', 'throttle:120,1'])->group(function () {
+        Route::post('exams/sessions/{session}/answer', [StudentExamController::class, 'answer'])->name('exams.answer');
     });
 });
 
