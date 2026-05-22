@@ -1,5 +1,7 @@
 <?php
 
+use App\Jobs\SendAssignmentDeadlineReminders;
+use App\Jobs\SendExamStartReminders;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -11,4 +13,12 @@ Artisan::command('inspire', function () {
 Schedule::command('exam:auto-submit-expired')
     ->everyTwoMinutes()
     ->withoutOverlapping()
+    ->onOneServer();
+
+Schedule::job(new SendAssignmentDeadlineReminders)
+    ->dailyAt('06:30')
+    ->onOneServer();
+
+Schedule::job(new SendExamStartReminders)
+    ->everyFifteenMinutes()
     ->onOneServer();
