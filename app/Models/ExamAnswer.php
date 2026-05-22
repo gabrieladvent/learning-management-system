@@ -6,11 +6,14 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class ExamAnswer extends Model
 {
     use HasFactory;
     use HasUuids;
+    use LogsActivity;
 
     protected $fillable = [
         'exam_session_id',
@@ -25,6 +28,14 @@ class ExamAnswer extends Model
         return [
             'score' => 'decimal:2',
         ];
+    }
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logOnly(['answer', 'score', 'feedback'])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges();
     }
 
     public function session(): BelongsTo
