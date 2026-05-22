@@ -12,12 +12,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Notifications\Notifiable;
 
 class Student extends Model implements AuthenticatableContract
 {
     use Authenticatable;
     use HasFactory;
     use HasUuids;
+    use Notifiable;
     use SoftDeletes;
 
     protected $fillable = [
@@ -60,6 +62,12 @@ class Student extends Model implements AuthenticatableContract
     public function assignmentSubmissions(): HasMany
     {
         return $this->hasMany(AssignmentSubmission::class);
+    }
+
+    public function pinnedClassroomSubjects(): BelongsToMany
+    {
+        return $this->belongsToMany(ClassroomSubject::class, 'student_pinned_courses')
+            ->withPivot('pinned_at');
     }
 
     public function examSessions(): HasMany
