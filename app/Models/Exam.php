@@ -37,6 +37,7 @@ class Exam extends Model
         'available_from',
         'available_until',
         'is_published',
+        'results_released_at',
     ];
 
     protected function casts(): array
@@ -53,6 +54,7 @@ class Exam extends Model
             'available_from' => 'datetime',
             'available_until' => 'datetime',
             'is_published' => 'boolean',
+            'results_released_at' => 'datetime',
         ];
     }
 

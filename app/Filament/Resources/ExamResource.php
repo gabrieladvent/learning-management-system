@@ -162,16 +162,24 @@ class ExamResource extends Resource
 
             Section::make('Visibility & Jadwal Tayang')->schema([
                 Toggle::make('is_published')
-                    ->label('Publish ke Siswa'),
+                    ->label('Publish ke Siswa')
+                    ->helperText('Aktifkan untuk membuat ujian terlihat siswa. Saat publish, siswa di kelas terkait otomatis dapat notifikasi.'),
 
                 DateTimePicker::make('available_from')
                     ->label('Mulai Tampil')
-                    ->native(false),
+                    ->native(false)
+                    ->helperText('Ujian akan terlihat di dashboard siswa mulai tanggal/jam ini. Kosongkan = langsung tampil saat di-publish.'),
 
                 DateTimePicker::make('available_until')
                     ->label('Berhenti Tampil')
-                    ->native(false),
-            ])->columns(3),
+                    ->native(false)
+                    ->helperText('Window pengerjaan ditutup pada tanggal ini (hard cutoff). Kosongkan = ujian tetap bisa dikerjakan tanpa batas.'),
+
+                DateTimePicker::make('results_released_at')
+                    ->label('Rilis Hasil')
+                    ->native(false)
+                    ->helperText('Tanggal/jam saat hasil ujian dirilis ke siswa. Sebelum tanggal ini, siswa tidak melihat skor (tetap bisa lihat status submitted). Kosongkan = hasil langsung tampil setelah dinilai.'),
+            ])->columns(2),
         ]);
     }
 

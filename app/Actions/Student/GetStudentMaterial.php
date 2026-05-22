@@ -182,6 +182,10 @@ class GetStudentMaterial
             }
         }
 
+        // Skor disembunyikan dari siswa sampai `results_released_at` lewat (kalau di-set).
+        $resultsReleased = $exam->results_released_at === null
+            || $exam->results_released_at->lessThanOrEqualTo(now());
+
         return [
             'id' => $exam->id,
             'title' => $exam->title,
@@ -194,7 +198,9 @@ class GetStudentMaterial
             'status' => $status,
             'session_id' => $session?->id,
             'submitted_at' => $submittedAt,
-            'total_score' => $totalScore,
+            'total_score' => $resultsReleased ? $totalScore : null,
+            'results_released' => $resultsReleased,
+            'results_released_at' => $exam->results_released_at?->toIso8601String(),
         ];
     }
 
