@@ -17,6 +17,7 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
+use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -149,7 +150,7 @@ class GradeRecap extends Page implements HasForms, HasTable
     }
 
     /**
-     * @return array<int, \Filament\Tables\Columns\Column>
+     * @return array<int, Column>
      */
     private function buildColumns(): array
     {
@@ -202,6 +203,7 @@ class GradeRecap extends Page implements HasForms, HasTable
                         $hasAny = true;
                     }
                 }
+
                 return $hasAny ? $sum : null;
             })
             ->formatStateUsing(fn ($state) => $state === null ? '—' : $this->formatScore((float) $state));

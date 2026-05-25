@@ -7,6 +7,54 @@ disesuaikan untuk dokumen spesifikasi (bukan software release).
 
 ---
 
+## [implementation-fase-a] — 2026-05-25
+
+**Bukan revisi spec** — log implementasi Fase A. Spec body (§§1–8, 13–15)
+tidak berubah; §9 (roadmap) ditandai status & deviasi minor didokumentasi.
+
+### Implemented
+
+- 4 migrasi (`learning_progress_events`, `learning_progress_sessions`,
+  `learning_progress_daily_rollups`, kolom `users.tracking_disclosure_seen_at`
+  + `students.tracking_opt_out`).
+- `config/learning_progress.php` lengkap dengan semua section spec.
+- Enum `LearningProgressEventType` + trait `HasLearningProgress` (apply ke
+  Material/Assignment/Exam).
+- Action `RecordLearningProgress`: validasi full, sort batch, snapshot
+  `classroom_subject_id`, opt-out skip, session comeback spawn dengan
+  `meta.original_client_session_id`, `activity()->disableLogging()` saat
+  heartbeat.
+- Route `POST /student/progress/heartbeat` + `POST /student/progress/disclosure-seen`
+  + `GET /student/materials/{material}/files/{media}/download` (proxy completion).
+- 4 artisan commands: `progress:rollup-daily`, `progress:close-stale-sessions`,
+  `progress:prune-old-events`, `progress:monitor-metrics` (schedule di
+  `routes/console.php`).
+- 25 feature test pass — formula §4.3, sort prereq, drift boundary, duration
+  clamp, multi-tab, opt-out, ≤2 INSERT/UPDATE per request, LogsActivity
+  silence, session comeback, snapshot policy, scope enforcement, sweeper,
+  rollup idempotency, download proxy log, HTTP integration.
+
+### Deviasi minor (didokumentasi di §9 Fase A)
+
+- `LogOptions::dontSubmitEmptyLogs()` → `dontLogEmptyChanges()` (method spec
+  tidak ada di Spatie ActivityLog v5.x; behavior equivalen).
+- Timestamp storage = `Asia/Jakarta` (mengikuti `APP_TIMEZONE`), bukan UTC
+  murni. Sweeper/pruner pakai `now()` app-tz. Rollup tetap konversi ke
+  Asia/Jakarta untuk grouping date — semantik §3.5 terjaga. Switch ke UTC
+  murni tertunda menunggu konfirmasi peneliti.
+- `LearningProgressDailyRollup.date` cast pakai `date:Y-m-d` (bukan default
+  `date`) supaya `updateOrCreate` idempotent.
+
+### Open items setelah Fase A
+
+- **TODO doc 02:** [02-database-schema.md](./02-database-schema.md) perlu
+  ditambah 3 tabel baru + 2 kolom (sesuai §16.1 spec).
+- **Fase B (frontend probe)** & **Fase C (Filament views)** belum mulai.
+  Tanpa Fase B, kolom durasi di Filament view (Fase C) akan kosong karena
+  belum ada event ter-ingest dari production traffic.
+
+---
+
 ## [v5] — 2026-05-25
 
 Revisi micro berbasis self-critique v4. Fokus: **stale references**

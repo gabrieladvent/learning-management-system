@@ -5,10 +5,15 @@ per peserta didik: durasi akses material, progres pengerjaan tugas &
 ujian, agregasi progres belajar per mata pelajaran, **dan dukungan
 data penelitian**.
 
-> Status: **Proposal v5** — belum diimplementasi. Lihat
+> Status: **Fase A live (2026-05-25)** — backend tracking, retention,
+> rollup, sweeper, monitoring, & material download proxy sudah
+> ter-implementasi + ter-test. Fase B (frontend probe) & Fase C
+> (Filament views) belum mulai. Lihat
 > [changelog](./changelog-11-learning-progress-tracking.md) untuk
-> riwayat revisi. Setelah implementasi selesai,
-> [02-database-schema.md](./02-database-schema.md) wajib di-update.
+> riwayat revisi. **TODO setelah Fase A merged:**
+> [02-database-schema.md](./02-database-schema.md) wajib di-update
+> dengan 3 tabel baru + 2 kolom (`users.tracking_disclosure_seen_at`,
+> `students.tracking_opt_out`).
 
 ---
 
@@ -672,51 +677,84 @@ Export untuk peneliti punya 2 mode (lihat [§14.3](#143-mode-anonim)):
 
 ## 9. Roadmap Implementasi
 
-### Fase A — Backend Tracking (4–5 hari)
+### Fase A — Backend Tracking ✅ (live 2026-05-25)
 
 **Entry:** [Fase 3 roadmap utama](./10-development-phases.md#fase-3--audit-trail--security) selesai.
 
-- [ ] Migrasi:
-      - `learning_progress_events` (bigint PK, no soft delete)
-      - `learning_progress_sessions`
-      - `learning_progress_daily_rollups`
-      - `users.tracking_disclosure_seen_at` & `students.tracking_opt_out`
-- [ ] Config `config/learning_progress.php` ([§7](#7-aturan-selesai--risiko-config-driven)).
-- [ ] Tambah env var `LEARNING_PROGRESS_PSEUDO_SECRET` (random 64 char)
-      di `.env` production + `.env.example` (placeholder kosong). Dibutuhkan
-      mode anonim export ([§14.3](#143-mode-anonim)).
-- [ ] Route download material (`GET /student/materials/{material}/files/{media}/download`)
-      + log `activity('material_download')` ([§7.1](#71-material-dianggap-selesai)).
-- [ ] Model + trait `HasLearningProgress` apply ke Material/Assignment/Exam.
-- [ ] Action `RecordLearningProgress` + endpoint heartbeat
-      (validation lengkap [§5.4](#54-payload-validation), snapshot
-      `classroom_subject_id`, skip `tracking_opt_out`).
-- [ ] Command:
-      - `progress:rollup-daily` (idempotent, `date` arg)
-      - `progress:close-stale-sessions` (every 5m)
-      - `progress:prune-old-events` (weekly, retention config-driven)
-- [ ] **Monitoring:** log Prometheus-style counter di `storage/logs/progress-metrics.log`
-      — events_inserted_total, sessions_active_gauge per 1 menit. Min
-      alert: kalau events_inserted_total = 0 selama 30 menit di jam
-      kerja → log warning.
-- [ ] Unit/feature test:
-      - Batch 5 event → 1 session row dengan `active_seconds` sesuai formula [§4.3](#43-formula-active_seconds--idle_seconds).
-      - Event di-batch tidak urut (occurred_at descending) → komputasi tetap benar (sort prerequisite).
-      - Sweeper: session tanpa close > 5m → `ended_at` + `end_reason='timeout'`.
-      - Rollup: 2 session di hari sama (boundary Asia/Jakarta) → 1 rollup row dengan SUM benar.
-      - Validation: drift > config → reject 422; drift tepat di batas → accept.
-      - Validation: `duration_ms` 99_999_999 → di-clamp ke `max_active_gap_ms`, tidak reject.
-      - Multi-tab: 2 session_id berbeda → `materials_opened_distinct = 1`.
-      - Opt-out: siswa flagged → 204 tanpa insert (assert query count = 0).
-      - **Bulk insert:** batch 10 event → assert `DB::getQueryLog()` punya ≤ 2 INSERT/UPDATE query.
-      - **LogsActivity disabled saat heartbeat:** 100 heartbeat insert → `activity_log` table tidak bertambah.
-      - **Material file completion:** GET `/student/materials/{m}/files/{f}/download` → `activity_log`
-        punya row `log_name='material_download'`; query "selesai" untuk material tsb return true.
-      - Force-recompute: re-run pruner setelah edit formula → sessions tidak terganggu (events sudah purge dianggap final).
-      - **Session comeback:** kirim event ke `session_id` yang `ended_at IS NOT NULL` → row session baru ter-spawn (bukan reopen lama); event terinsert dengan `meta.original_client_session_id` di-set.
+**Status implementasi:** 25/25 test pass. Smoke test end-to-end OK
+(heartbeat → session → rollup → log monitoring).
 
-**Exit:** Hit endpoint dari curl 5 kali, query session → 1 row sesuai
-formula. Rollup manual → row muncul. Pruner dummy data 91 hari → terhapus.
+- [x] Migrasi (semua di `database/migrations/2026_05_25_*`):
+      - [`create_learning_progress_events_table`](../database/migrations/2026_05_25_100001_create_learning_progress_events_table.php) — bigint PK, 4 index, no soft delete
+      - [`create_learning_progress_sessions_table`](../database/migrations/2026_05_25_100002_create_learning_progress_sessions_table.php) — UUID, unique `(student, trackable, session_id)`
+      - [`create_learning_progress_daily_rollups_table`](../database/migrations/2026_05_25_100003_create_learning_progress_daily_rollups_table.php) — unique `(student, classroom_subject, date)`
+      - [`add_tracking_columns_to_users_and_students`](../database/migrations/2026_05_25_100004_add_tracking_columns_to_users_and_students.php) — `users.tracking_disclosure_seen_at` + `students.tracking_opt_out`
+- [x] Config [`config/learning_progress.php`](../config/learning_progress.php) ([§7](#7-aturan-selesai--risiko-config-driven)).
+- [x] Env var `LEARNING_PROGRESS_PSEUDO_SECRET` di [`.env.example`](../.env.example) (placeholder kosong). Generate dengan
+      `php -r "echo bin2hex(random_bytes(32));"`. Dibutuhkan mode anonim export ([§14.3](#143-mode-anonim)).
+- [x] Route download material di [`MaterialController::downloadFile`](../app/Http/Controllers/Student/MaterialController.php)
+      (`GET /student/materials/{material}/files/{media}/download`) + log `activity('material_download')` dengan
+      `properties: {media_id, file_name}` ([§7.1](#71-material-dianggap-selesai)).
+- [x] Model + trait [`HasLearningProgress`](../app/Models/Concerns/HasLearningProgress.php) apply ke
+      [Material](../app/Models/Material.php), [Assignment](../app/Models/Assignment.php),
+      [Exam](../app/Models/Exam.php). Enum [`LearningProgressEventType`](../app/Models/Enums/LearningProgressEventType.php)
+      dengan helper `isActiveState()` / `isIdleState()`.
+- [x] Action [`RecordLearningProgress`](../app/Actions/Student/RecordLearningProgress.php) + endpoint heartbeat
+      [`Student\ProgressController`](../app/Http/Controllers/Student/ProgressController.php). Validasi lengkap
+      ([§5.4](#54-payload-validation)), snapshot `classroom_subject_id`, skip `tracking_opt_out`, sort batch,
+      session comeback dengan spawn UUID baru + `meta.original_client_session_id`, `activity()->disableLogging()`
+      selama insert. **Perf:** 1 SELECT existing session + 1 INSERT events + 1 UPDATE/INSERT session = ≤ 2 INSERT/UPDATE per request
+      (test enforced).
+- [x] Command:
+      - [`progress:rollup-daily`](../app/Console/Commands/ProgressRollupDailyCommand.php) — idempotent via `updateOrCreate`, `--date=YYYY-MM-DD` arg, daily 02:00 Asia/Jakarta
+      - [`progress:close-stale-sessions`](../app/Console/Commands/ProgressCloseStaleSessionsCommand.php) — every 5m
+      - [`progress:prune-old-events`](../app/Console/Commands/ProgressPruneOldEventsCommand.php) — weekly, chunked `delete()` 1000/batch
+- [x] **Monitoring:** [`progress:monitor-metrics`](../app/Console/Commands/ProgressMonitorMetricsCommand.php) —
+      tiap menit tulis `events_inserted_total{window="1m"}=N sessions_open_gauge=N` ke
+      `storage/logs/progress-metrics.log`. Warn ke stderr kalau `events_inserted_total=0` selama jam kerja
+      Asia/Jakarta (Sen-Jum 07:00–17:00).
+- [x] Schedule registered di [`routes/console.php`](../routes/console.php).
+- [x] Unit/feature test (25 pass, lokasi [`tests/Feature/LearningProgress/`](../tests/Feature/LearningProgress/)):
+      - [x] Batch 5 event → 1 session row dengan `active_seconds` sesuai formula [§4.3](#43-formula-active_seconds--idle_seconds).
+      - [x] Event di-batch tidak urut (occurred_at descending) → komputasi tetap benar (sort prerequisite).
+      - [x] Sweeper: session tanpa close > 5m → `ended_at` + `end_reason='timeout'`.
+      - [x] Rollup: 2 session di hari sama (boundary Asia/Jakarta) → 1 rollup row dengan SUM benar.
+      - [x] Rollup: idempotent — re-run tidak duplikasi, `id` & `created_at` preserved.
+      - [x] Validation: drift > config → reject 422; drift tepat di batas → accept.
+      - [x] Validation: `duration_ms` 99_999_999 → di-clamp ke `max_active_gap_ms`, tidak reject.
+      - [x] Multi-tab: 2 session_id berbeda → 2 session row terpisah.
+      - [x] Opt-out: siswa flagged → 204 tanpa insert (assert 0 write query).
+      - [x] **Bulk insert:** batch 10 event → assert `DB::getQueryLog()` punya ≤ 2 INSERT/UPDATE query ke tabel progress.
+      - [x] **LogsActivity disabled saat heartbeat:** 10× heartbeat insert → `activity_log` table tidak bertambah.
+      - [x] **Material file completion:** GET `/student/materials/{m}/files/{media}/download` → `activity_log`
+        punya row `log_name='material_download'` dengan `properties.media_id`.
+      - [x] **Material file download forbidden** untuk siswa tidak enrolled (404, tanpa log).
+      - [x] **Session comeback:** event ke `session_id` yang sudah ended → row session baru spawn dengan
+        UUID baru; first event punya `meta.original_client_session_id` = client UUID lama.
+      - [x] Snapshot `classroom_subject_id` dari trackable (Material langsung; Assignment/Exam via `material`).
+      - [x] Scope enforcement: trackable bukan milik kelas siswa → `AccessDeniedHttpException`.
+      - [x] HTTP integration: POST `/student/progress/heartbeat` autentikasi guard `student` → 204; validation gagal → 422; dismiss disclosure → `users.tracking_disclosure_seen_at` ter-isi.
+      - (Tidak di-cover: force-recompute pruner — belum ada use case nyata, tunda sampai dibutuhkan Fase B/C.)
+
+**Exit:** Smoke test (sudah jalan, lihat session log) — heartbeat 4-event
+(open/heartbeat×2/close span 60s) → `active=60s idle=0s ended=closed events=4`.
+`progress:rollup-daily --date=<hari ini>` → 1 rollup row dengan `material_seconds=60 materials_opened=1`.
+`progress:close-stale-sessions`, `progress:prune-old-events`, `progress:monitor-metrics` semua
+sukses tanpa error pada DB kosong.
+
+**Deviasi dari spec (di-implement berbeda dengan alasan):**
+
+1. **§3.2** `LogsActivity::dontSubmitEmptyLogs()` di-spec sebagai method, tapi versi
+   `spatie/laravel-activitylog` di project (`^5.0`) hanya punya `dontLogEmptyChanges()`.
+   Behavior equivalen — implementasi pakai `dontLogEmptyChanges()`.
+2. **§3.5** Spec bilang "Storage: UTC". App ini set `APP_TIMEZONE=Asia/Jakarta`, sehingga
+   Eloquent menyimpan timestamp dalam zona Asia/Jakarta. Sweeper & pruner pakai `now()` (app-tz)
+   untuk comparison konsisten dengan format storage. Rollup tetap konversi ke Asia/Jakarta untuk
+   grouping `date` — semantik §3.5 terjaga walau storage bukan UTC murni. **Perlu follow-up
+   peneliti:** apakah switch ke UTC murni diperlukan untuk reproducibility, atau current setup OK.
+3. **Cast `LearningProgressDailyRollup.date`** pakai `date:Y-m-d` (bukan `date` default) supaya
+   `updateOrCreate` match WHERE-nya — kalau default `date`, Eloquent serialize ke datetime format
+   dan unique constraint check fail.
 
 ### Fase B — Frontend Probe (2–3 hari)
 

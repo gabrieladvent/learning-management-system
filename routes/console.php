@@ -29,3 +29,23 @@ Schedule::job(new SendExamStartReminders)
 Schedule::command('activitylog:clean')
     ->weekly()
     ->onOneServer();
+
+// Learning Progress Tracking (Fase A — docs/11-learning-progress-tracking.md §5.3, §9).
+Schedule::command('progress:rollup-daily')
+    ->dailyAt('02:00')
+    ->timezone('Asia/Jakarta')
+    ->onOneServer();
+
+Schedule::command('progress:close-stale-sessions')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();
+
+Schedule::command('progress:prune-old-events')
+    ->weekly()
+    ->onOneServer();
+
+Schedule::command('progress:monitor-metrics')
+    ->everyMinute()
+    ->withoutOverlapping()
+    ->onOneServer();

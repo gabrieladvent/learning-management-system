@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLearningProgress;
 use App\Notifications\StudentAssignmentPublished;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,6 +17,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 class Assignment extends Model implements HasMedia
 {
     use HasFactory;
+    use HasLearningProgress;
     use HasUuids;
     use InteractsWithMedia;
     use SoftDeletes;

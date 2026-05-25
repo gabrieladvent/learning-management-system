@@ -32,6 +32,7 @@ class Student extends Model implements AuthenticatableContract
         'place_of_birth',
         'birth_date',
         'is_active',
+        'tracking_opt_out',
     ];
 
     protected function casts(): array
@@ -40,6 +41,7 @@ class Student extends Model implements AuthenticatableContract
             'birth_date' => 'date',
             'gender' => GenderEnum::class,
             'is_active' => 'boolean',
+            'tracking_opt_out' => 'boolean',
         ];
     }
 
