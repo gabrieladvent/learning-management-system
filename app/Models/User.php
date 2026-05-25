@@ -28,6 +28,7 @@ class User extends Authenticatable implements FilamentUser
         'last_login_at',
         'last_login_ip',
         'password_changed_at',
+        'tracking_disclosure_seen_at',
     ];
 
     protected $hidden = [
@@ -41,6 +42,7 @@ class User extends Authenticatable implements FilamentUser
             'email_verified_at' => 'datetime',
             'last_login_at' => 'datetime',
             'password_changed_at' => 'datetime',
+            'tracking_disclosure_seen_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
         ];

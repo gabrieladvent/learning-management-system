@@ -8,6 +8,7 @@ use App\Http\Controllers\Student\DashboardController as StudentDashboardControll
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\MaterialController as StudentMaterialController;
 use App\Http\Controllers\Student\NotificationController as StudentNotificationController;
+use App\Http\Controllers\Student\ProgressController as StudentProgressController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -48,6 +49,13 @@ Route::prefix('student')->name('student.')->group(function () {
     // Auto-save jawaban ujian — throttle lebih longgar karena bisa fire tiap beberapa detik.
     Route::middleware(['auth:student', 'throttle:120,1'])->group(function () {
         Route::post('exams/sessions/{session}/answer', [StudentExamController::class, 'answer'])->name('exams.answer');
+
+        // Heartbeat tracking pembelajaran (Phase 1 learning-progress-tracking).
+        Route::post('progress/heartbeat', [StudentProgressController::class, 'heartbeat'])->name('progress.heartbeat');
+        Route::post('progress/disclosure-seen', [StudentProgressController::class, 'dismissDisclosure'])->name('progress.disclosure-seen');
+
+        // Download file material — track sebagai proxy completion untuk material type=file (§7.1).
+        Route::get('materials/{material}/files/{media}/download', [StudentMaterialController::class, 'downloadFile'])->name('materials.files.download');
     });
 });
 

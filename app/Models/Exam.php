@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLearningProgress;
 use App\Models\Enums\ExamModeEnum;
 use App\Models\Enums\ExamStatusEnum;
 use App\Notifications\StudentExamPublished;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Notification;
 class Exam extends Model
 {
     use HasFactory;
+    use HasLearningProgress;
     use HasUuids;
     use SoftDeletes;
 

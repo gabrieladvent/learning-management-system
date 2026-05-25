@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLearningProgress;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,6 +15,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 class Material extends Model implements HasMedia
 {
     use HasFactory;
+    use HasLearningProgress;
     use HasUuids;
     use InteractsWithMedia;
     use SoftDeletes;
