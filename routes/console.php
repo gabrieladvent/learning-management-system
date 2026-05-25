@@ -22,3 +22,10 @@ Schedule::job(new SendAssignmentDeadlineReminders)
 Schedule::job(new SendExamStartReminders)
     ->everyFifteenMinutes()
     ->onOneServer();
+
+// Cleanup activity log lama (default 365 hari, atur di config/activitylog.php
+// 'clean_after_days'). Run weekly supaya tabel activity_log tidak meledak
+// di production yang aktif (80 siswa × 5 material/hari = 400 row/hari).
+Schedule::command('activitylog:clean')
+    ->weekly()
+    ->onOneServer();
