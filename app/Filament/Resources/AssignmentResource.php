@@ -132,15 +132,18 @@ class AssignmentResource extends Resource
 
             Section::make('Visibility & Jadwal')->schema([
                 Toggle::make('is_published')
-                    ->label('Publish ke Siswa'),
+                    ->label('Publish ke Siswa')
+                    ->helperText('Aktifkan untuk membuat tugas terlihat siswa. Saat publish, siswa di kelas terkait otomatis dapat notifikasi.'),
 
                 DateTimePicker::make('available_from')
                     ->label('Mulai Tampil')
-                    ->native(false),
+                    ->native(false)
+                    ->helperText('Tugas baru akan terlihat siswa mulai tanggal/jam ini. Kosongkan = langsung tampil saat di-publish.'),
 
                 DateTimePicker::make('available_until')
                     ->label('Berhenti Tampil')
-                    ->native(false),
+                    ->native(false)
+                    ->helperText('Window pengumpulan ditutup pada tanggal ini (hard cutoff). Kosongkan = tetap bisa dikumpulkan sampai deadline.'),
             ])->columns(3),
         ]);
     }

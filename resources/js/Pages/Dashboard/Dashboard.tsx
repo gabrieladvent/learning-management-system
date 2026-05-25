@@ -1,7 +1,14 @@
 import { Head, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { BookMarked, Pin } from 'lucide-react';
-import { CourseCard, DashboardPageProps, HeroGreeting, TodoSection } from '@/Components/Dashboard';
+import {
+    CourseCard,
+    DashboardPageProps,
+    HeroGreeting,
+    StatsRow,
+    TodoSection,
+    UpcomingExamCard,
+} from '@/Components/Dashboard';
 import { EmptyState } from '@/Components';
 import { StudentLayout } from '@/Layouts';
 import { staggerContainer } from '@/lib';
@@ -10,7 +17,7 @@ import type { Course } from '@/Components/Dashboard';
 
 export default function Dashboard() {
     const { props } = usePage<PageProps<DashboardPageProps>>();
-    const { courses, meta, auth, todo } = props;
+    const { courses, meta, auth, todo, stats } = props;
     const student = auth.student;
     const todayItems = todo?.today ?? [];
 
@@ -36,6 +43,10 @@ export default function Dashboard() {
                 semester={meta.semester}
                 inspire={meta.inspire}
             />
+
+            <StatsRow stats={stats} />
+
+            {stats.upcoming_exam && <UpcomingExamCard exam={stats.upcoming_exam} />}
 
             {pinnedCourses.length > 0 && (
                 <section className="mb-10">

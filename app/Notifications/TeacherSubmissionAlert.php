@@ -18,7 +18,7 @@ class TeacherSubmissionAlert
      * Notification ditulis ke tabel `notifications` (database channel)
      * dan akan muncul di bell-icon Filament guru.
      */
-    public static function forAssignment(AssignmentSubmission $submission): void
+    public static function forAssignment(AssignmentSubmission $submission, bool $isResubmit = false): void
     {
         $teacherUser = self::resolveTeacherUser(
             $submission->assignment?->material?->classroomSubject?->teacher?->user_id
@@ -31,11 +31,15 @@ class TeacherSubmissionAlert
         $studentName = $submission->student?->full_name ?? 'Siswa';
         $title = $submission->assignment?->title ?? 'Tugas';
 
+        $heading = $isResubmit
+            ? "Tugas direvisi: {$title}"
+            : "Tugas baru dikumpulkan: {$title}";
+
         FilamentNotification::make()
-            ->title("Tugas baru dikumpulkan: {$title}")
+            ->title($heading)
             ->body("Siswa: {$studentName}")
-            ->icon('heroicon-o-clipboard-document-list')
-            ->iconColor('primary')
+            ->icon($isResubmit ? 'heroicon-o-arrow-path' : 'heroicon-o-clipboard-document-list')
+            ->iconColor($isResubmit ? 'warning' : 'primary')
             ->actions([
                 Action::make('view')
                     ->label('Lihat')

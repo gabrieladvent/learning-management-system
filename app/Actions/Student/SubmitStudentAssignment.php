@@ -50,7 +50,7 @@ class SubmitStudentAssignment
 
         $this->validateFiles($assignment, $newFiles);
 
-        $submission = DB::transaction(function () use ($assignment, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
+        [$submission, $isResubmit] = DB::transaction(function () use ($assignment, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
             // withTrashed: unique(assignment_id, student_id) tidak respect soft-delete di DB level.
             // Tanpa ini, submission yang pernah dihapus admin → siswa tidak bisa submit lagi (1062).
             $submission = AssignmentSubmission::withTrashed()
@@ -58,6 +58,8 @@ class SubmitStudentAssignment
                     'assignment_id' => $assignment->id,
                     'student_id' => $student->id,
                 ]);
+
+            $isResubmit = $submission->exists && $submission->submitted_at !== null;
 
             // Defense in depth: kalau guru sudah menilai, kunci. Frontend juga sudah hide tombol Edit.
             if ($submission->exists && $submission->score !== null) {
@@ -88,10 +90,13 @@ class SubmitStudentAssignment
                 $submission->addMedia($file)->toMediaCollection('submission_files');
             }
 
-            return $submission->fresh();
+            return [$submission->fresh(), $isResubmit];
         });
 
-        TeacherSubmissionAlert::forAssignment($submission->load('assignment.material.classroomSubject.teacher', 'student'));
+        TeacherSubmissionAlert::forAssignment(
+            $submission->load('assignment.material.classroomSubject.teacher', 'student'),
+            $isResubmit,
+        );
 
         return $submission;
     }

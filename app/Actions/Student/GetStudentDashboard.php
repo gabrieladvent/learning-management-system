@@ -10,6 +10,7 @@ class GetStudentDashboard
     /**
      * @return array{
      *     courses: array<int, array<string, mixed>>,
+     *     stats: array<string, mixed>,
      *     meta: array{
      *         classroom_name: ?string,
      *         academic_year: ?string,
@@ -50,6 +51,7 @@ class GetStudentDashboard
 
         return [
             'courses' => $courses,
+            'stats' => app(GetStudentStats::class)->handle($student),
             'meta' => [
                 'classroom_name' => $primaryClassroom?->name,
                 'academic_year' => $primaryClassroom?->academic_year,

@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,7 +31,26 @@ class AuthController extends Controller
             'password' => ['required', 'string', 'min:6'],
         ]);
 
-        $authenticate->handle($request, $data['nisn'], $data['password']);
+        $throttleKey = 'student-login:'.$data['nisn'].'|'.$request->ip();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            throw ValidationException::withMessages([
+                'nisn' => sprintf(
+                    'Terlalu banyak percobaan login. Coba lagi dalam %d detik.',
+                    $seconds,
+                ),
+            ]);
+        }
+
+        try {
+            $authenticate->handle($request, $data['nisn'], $data['password']);
+        } catch (ValidationException $e) {
+            RateLimiter::hit($throttleKey, 60);
+            throw $e;
+        }
+
+        RateLimiter::clear($throttleKey);
 
         return redirect()->intended(route('student.dashboard'));
     }
