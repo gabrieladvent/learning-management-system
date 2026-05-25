@@ -52,6 +52,14 @@ class GradeRecap extends Page implements HasForms, HasTable
      */
     private ?array $gradeMatrixCache = null;
 
+    /**
+     * Cache daftar kolom dinamis (assignment + exam) per request.
+     * Dipanggil banyak kali (Total column closure per baris siswa) — tanpa cache jadi N+1.
+     *
+     * @var array<int, array<string, mixed>>|null
+     */
+    private ?array $dynamicColumnsCache = null;
+
     public function mount(): void
     {
         $this->form->fill();
@@ -60,6 +68,7 @@ class GradeRecap extends Page implements HasForms, HasTable
     public function updatedClassroomSubjectId(): void
     {
         $this->gradeMatrixCache = null;
+        $this->dynamicColumnsCache = null;
         $this->resetTable();
     }
 
@@ -214,14 +223,19 @@ class GradeRecap extends Page implements HasForms, HasTable
 
     /**
      * Daftar kolom dinamis: tiap kolom satu assignment / exam.
+     * Cached per request supaya Total column closure tidak trigger query ulang per baris siswa.
      *
      * @return array<int, array{key: string, type: 'assignment'|'exam_quiz'|'exam_submission', id: string, label: string, max_score: float}>
      */
     public function getDynamicColumns(): array
     {
+        if ($this->dynamicColumnsCache !== null) {
+            return $this->dynamicColumnsCache;
+        }
+
         $course = $this->getCourse();
         if (! $course) {
-            return [];
+            return $this->dynamicColumnsCache = [];
         }
 
         $columns = [];
@@ -256,7 +270,7 @@ class GradeRecap extends Page implements HasForms, HasTable
             ];
         }
 
-        return $columns;
+        return $this->dynamicColumnsCache = $columns;
     }
 
     /**

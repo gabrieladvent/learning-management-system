@@ -46,10 +46,12 @@ class SubmissionsRelationManager extends RelationManager
                             }
 
                             $text = $record->submitted_at->translatedFormat('l, d F Y · H:i');
+                            $deadline = $record->assignment?->deadline;
+                            $isLate = $deadline && $record->submitted_at->greaterThan($deadline);
 
-                            if ($record->is_late && $record->assignment?->deadline) {
+                            if ($isLate) {
                                 $late = $record->submitted_at->diffForHumans(
-                                    $record->assignment->deadline,
+                                    $deadline,
                                     ['parts' => 2, 'syntax' => CarbonInterface::DIFF_ABSOLUTE]
                                 );
 
@@ -186,7 +188,7 @@ class SubmissionsRelationManager extends RelationManager
                     ->placeholder('Belum mengumpulkan')
                     ->sortable(),
 
-                TextColumn::make('is_late')
+                TextColumn::make('lateness')
                     ->label('Ketepatan')
                     ->badge()
                     ->getStateUsing(function ($record) {
@@ -194,16 +196,24 @@ class SubmissionsRelationManager extends RelationManager
                             return null;
                         }
 
-                        return $record->is_late ? 'Terlambat' : 'Tepat Waktu';
+                        $deadline = $record->assignment?->deadline;
+
+                        if (! $deadline) {
+                            return 'Tepat Waktu';
+                        }
+
+                        return $record->submitted_at->greaterThan($deadline) ? 'Terlambat' : 'Tepat Waktu';
                     })
                     ->color(fn ($state) => $state === 'Terlambat' ? 'danger' : 'success')
                     ->tooltip(function ($record) {
-                        if (! $record->submitted_at || ! $record->is_late || ! $record->assignment?->deadline) {
+                        $deadline = $record->assignment?->deadline;
+
+                        if (! $record->submitted_at || ! $deadline || ! $record->submitted_at->greaterThan($deadline)) {
                             return null;
                         }
 
                         return 'Terlambat '.$record->submitted_at->diffForHumans(
-                            $record->assignment->deadline,
+                            $deadline,
                             ['parts' => 2, 'syntax' => CarbonInterface::DIFF_ABSOLUTE]
                         );
                     })
