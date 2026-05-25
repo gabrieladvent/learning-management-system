@@ -17,13 +17,19 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Concerns\InteractsWithTable;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-class GradeRecap extends Page implements HasForms
+class GradeRecap extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
+    use InteractsWithTable;
 
     protected static ?string $navigationIcon = 'heroicon-o-table-cells';
 
@@ -39,9 +45,22 @@ class GradeRecap extends Page implements HasForms
 
     public ?string $classroomSubjectId = null;
 
+    /**
+     * Cache nilai per request supaya tidak query ulang per cell.
+     *
+     * @var array<string, array<string, float|null>>|null
+     */
+    private ?array $gradeMatrixCache = null;
+
     public function mount(): void
     {
         $this->form->fill();
+    }
+
+    public function updatedClassroomSubjectId(): void
+    {
+        $this->gradeMatrixCache = null;
+        $this->resetTable();
     }
 
     public function form(Form $form): Form
@@ -92,20 +111,105 @@ class GradeRecap extends Page implements HasForms
             ->find($this->classroomSubjectId);
     }
 
-    /**
-     * @return Collection<int, Student>
-     */
-    public function getStudents(): Collection
+    public function table(Table $table): Table
+    {
+        return $table
+            ->query(fn () => $this->studentsQuery())
+            ->columns($this->buildColumns())
+            ->paginated([10, 20, 50, 100])
+            ->defaultPaginationPageOption(20)
+            ->defaultSort('full_name', 'asc')
+            ->emptyStateHeading(
+                $this->getCourse()
+                    ? 'Belum ada siswa terdaftar di kelas ini.'
+                    : 'Pilih kelas + mata pelajaran dulu untuk menampilkan rekap.'
+            )
+            ->emptyStateIcon('heroicon-o-table-cells');
+    }
+
+    private function studentsQuery(): Builder
     {
         $course = $this->getCourse();
+
         if (! $course) {
-            return collect();
+            return Student::query()->whereRaw('1=0');
         }
 
         return Student::query()
-            ->whereHas('classrooms', fn ($q) => $q->whereKey($course->classroom_id))
-            ->orderBy('full_name')
-            ->get();
+            ->whereHas('classrooms', fn (Builder $q) => $q->whereKey($course->classroom_id));
+    }
+
+    /**
+     * @return array<int, \Filament\Tables\Columns\Column>
+     */
+    private function buildColumns(): array
+    {
+        $columns = [
+            TextColumn::make('nisn')
+                ->label('NISN')
+                ->searchable()
+                ->fontFamily('mono')
+                ->size('xs')
+                ->color('gray'),
+
+            TextColumn::make('full_name')
+                ->label('Nama Siswa')
+                ->searchable()
+                ->sortable()
+                ->weight('medium'),
+        ];
+
+        $dynamicColumns = $this->getDynamicColumns();
+
+        foreach ($dynamicColumns as $col) {
+            $maxScore = rtrim(rtrim(number_format($col['max_score'], 2, '.', ''), '0'), '.');
+            $typeLabel = match ($col['type']) {
+                'exam_quiz' => 'quiz',
+                'exam_submission' => 'ujian',
+                default => 'tugas',
+            };
+
+            $columns[] = TextColumn::make($col['key'])
+                ->label($col['label'])
+                ->description("max {$maxScore} · {$typeLabel}")
+                ->alignCenter()
+                ->state(fn (Student $record) => $this->gradeFor($record->id, $col['key']))
+                ->formatStateUsing(fn ($state) => $state === null ? '—' : $this->formatScore((float) $state))
+                ->placeholder('—');
+        }
+
+        $columns[] = TextColumn::make('total')
+            ->label('Total')
+            ->alignCenter()
+            ->weight('bold')
+            ->color('primary')
+            ->state(function (Student $record) {
+                $sum = 0.0;
+                $hasAny = false;
+                foreach ($this->getDynamicColumns() as $c) {
+                    $score = $this->gradeFor($record->id, $c['key']);
+                    if ($score !== null) {
+                        $sum += $score;
+                        $hasAny = true;
+                    }
+                }
+                return $hasAny ? $sum : null;
+            })
+            ->formatStateUsing(fn ($state) => $state === null ? '—' : $this->formatScore((float) $state));
+
+        return $columns;
+    }
+
+    private function formatScore(float $score): string
+    {
+        return rtrim(rtrim(number_format($score, 2, '.', ''), '0'), '.');
+    }
+
+    private function gradeFor(string $studentId, string $columnKey): ?float
+    {
+        $this->gradeMatrixCache ??= $this->computeGradeMatrix();
+
+        return $this->gradeMatrixCache[$studentId][$columnKey] ?? null;
     }
 
     /**
@@ -156,18 +260,36 @@ class GradeRecap extends Page implements HasForms
     }
 
     /**
-     * Matrix nilai [student_id][column_key] => float|null.
+     * SEMUA students kelas (untuk export Excel).
+     *
+     * @return Collection<int, Student>
+     */
+    public function getAllStudents(): Collection
+    {
+        $course = $this->getCourse();
+        if (! $course) {
+            return collect();
+        }
+
+        return Student::query()
+            ->whereHas('classrooms', fn ($q) => $q->whereKey($course->classroom_id))
+            ->orderBy('full_name')
+            ->get();
+    }
+
+    /**
+     * Matrix nilai [student_id][column_key] => float|null untuk SEMUA siswa di kelas.
      *
      * @return array<string, array<string, float|null>>
      */
-    public function getGradeMatrix(): array
+    private function computeGradeMatrix(): array
     {
         $course = $this->getCourse();
         if (! $course) {
             return [];
         }
 
-        $studentIds = $this->getStudents()->pluck('id');
+        $studentIds = $this->getAllStudents()->pluck('id');
         $columns = $this->getDynamicColumns();
 
         $matrix = [];
@@ -218,6 +340,14 @@ class GradeRecap extends Page implements HasForms
         return $matrix;
     }
 
+    /**
+     * Public accessor untuk view (header summary).
+     */
+    public function getStudentCount(): int
+    {
+        return $this->studentsQuery()->count();
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -247,9 +377,9 @@ class GradeRecap extends Page implements HasForms
         return Excel::download(
             new GradeRecapExport(
                 $course,
-                $this->getStudents(),
+                $this->getAllStudents(),
                 $this->getDynamicColumns(),
-                $this->getGradeMatrix(),
+                $this->computeGradeMatrix(),
             ),
             $filename,
         );
