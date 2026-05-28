@@ -53,7 +53,12 @@ class GetStudentMaterial
             'mime_type' => $media->mime_type,
             'size' => $media->size,
             'extension' => pathinfo($media->file_name, PATHINFO_EXTENSION),
-            'url' => $media->getUrl(),
+            // Route via proxy — backend log activity 'material_download' sebagai proxy
+            // completion untuk material type=file (docs/11 §7.1).
+            'url' => route('student.materials.files.download', [
+                'material' => $material->id,
+                'media' => (string) $media->getKey(),
+            ]),
         ])->values()->all();
 
         $assignments = $material->assignments()

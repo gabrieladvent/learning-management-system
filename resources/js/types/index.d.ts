@@ -10,6 +10,8 @@ export interface Student {
     nisn: string;
     full_name: string;
     class: string | null;
+    tracking_opt_out: boolean;
+    tracking_disclosure_seen_at: string | null;
 }
 
 export interface FlashMessages {

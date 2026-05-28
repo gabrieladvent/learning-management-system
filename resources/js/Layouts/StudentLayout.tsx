@@ -4,6 +4,7 @@ import { BookOpen, LogOut } from 'lucide-react';
 import { PropsWithChildren } from 'react';
 import NotificationsDropdown from '@/Components/Layout/NotificationsDropdown';
 import TodoSidePanelButton from '@/Components/Layout/TodoSidePanelButton';
+import TrackingDisclosureBanner from '@/Components/Layout/TrackingDisclosureBanner';
 import { PageProps } from '@/types';
 import { pageTransition, useFlashToast } from '@/lib';
 
@@ -23,6 +24,7 @@ export default function StudentLayout({ children, title }: PropsWithChildren<Pro
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-900">
+            {student && <TrackingDisclosureBanner seenAt={student.tracking_disclosure_seen_at} />}
             <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
                 <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-6">
                     <Link
