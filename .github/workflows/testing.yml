@@ -49,6 +49,14 @@ jobs:
       - name: Copy .env
         run: cp .env.example .env.testing
 
+      - name: Override env for testing
+        run: |
+          echo "VITE_MANIFEST_SKIP=true" >> .env.testing
+          echo "SESSION_DRIVER=array" >> .env.testing
+          echo "CACHE_STORE=array" >> .env.testing
+          echo "QUEUE_CONNECTION=sync" >> .env.testing
+          echo "MAIL_MAILER=array" >> .env.testing
+
       - name: Generate app key
         run: php artisan key:generate --env=testing
 
