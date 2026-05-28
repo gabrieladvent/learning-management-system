@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Widgets\AtRiskStudentsWidget;
 use App\Filament\Widgets\ClassroomStatsWidget;
 use App\Filament\Widgets\PendingGradingWidget;
 use App\Filament\Widgets\UpcomingExamWidget;
@@ -47,6 +48,7 @@ class TeacherPanelProvider extends PanelProvider
                 ClassroomStatsWidget::class,
                 PendingGradingWidget::class,
                 UpcomingExamWidget::class,
+                AtRiskStudentsWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

@@ -17,7 +17,7 @@ import { useState } from 'react';
 import { ActivityTimeline, MathContent } from '@/Components';
 import type { ExamStartPageProps, ExamStatus } from '@/Components/Exam';
 import { StudentLayout } from '@/Layouts';
-import { toast } from '@/lib';
+import { toast, useLearningProgress } from '@/lib';
 import { PageProps } from '@/types';
 
 const STATUS_BANNER: Record<ExamStatus, { label: string; tone: 'violet' | 'sky' | 'amber' | 'emerald'; icon: LucideIcon }> = {
@@ -48,6 +48,14 @@ function formatDateTime(iso: string | null): string | null {
 export default function ExamStart() {
     const { props } = usePage<PageProps<ExamStartPageProps>>();
     const { course, material, exam, session, activities } = props;
+
+    // Track waktu siswa "menggantung" di halaman detail ujian (sebelum klik mulai &
+    // sesudah submit) — sesuai docs §3.3, waktu mengerjakan ujian itu sendiri sudah
+    // dicatat di exam_sessions (started_at → submitted_at), jadi probe TIDAK dipasang
+    // di ExamTake supaya tidak double-count.
+    useLearningProgress('exam', exam.id, {
+        enabled: !props.auth.student?.tracking_opt_out,
+    });
     const [starting, setStarting] = useState(false);
 
     const status = STATUS_BANNER[exam.status];

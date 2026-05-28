@@ -38,7 +38,7 @@ jobs:
             });
 
             const workflows = checkRuns.check_runs.filter(run =>
-              ['Lint', 'Build', 'check-source'].some(name => run.name.includes(name)) &&
+              ['Lint', 'Build', 'check-source', 'Test', 'PHPUnit'].some(name => run.name.includes(name)) &&
               !run.name.includes('telegram') &&
               !run.name.includes('Notify')
             );

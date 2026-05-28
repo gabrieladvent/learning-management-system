@@ -15,7 +15,7 @@ import { ExamListCard } from '@/Components/Exam';
 import { FileCard, MathContent } from '@/Components';
 import type { MaterialDetailPageProps } from '@/Components/Course';
 import { StudentLayout } from '@/Layouts';
-import { fadeUp, staggerContainer } from '@/lib';
+import { fadeUp, staggerContainer, useLearningProgress } from '@/lib';
 import { PageProps } from '@/types';
 
 function formatDate(iso: string | null) {
@@ -30,6 +30,10 @@ function formatDate(iso: string | null) {
 export default function MaterialDetail() {
     const { props } = usePage<PageProps<MaterialDetailPageProps>>();
     const { course, material } = props;
+
+    useLearningProgress('material', material.id, {
+        enabled: !props.auth.student?.tracking_opt_out,
+    });
 
     const publishedAt = formatDate(material.available_from ?? material.created_at);
     const hasContent = !!material.content?.trim();

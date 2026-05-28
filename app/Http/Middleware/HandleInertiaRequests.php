@@ -46,6 +46,8 @@ class HandleInertiaRequests extends Middleware
                     'nisn' => $student->nisn,
                     'full_name' => $student->full_name,
                     'class' => $student->class,
+                    'tracking_opt_out' => (bool) $student->tracking_opt_out,
+                    'tracking_disclosure_seen_at' => $student->user?->tracking_disclosure_seen_at?->toIso8601String(),
                 ] : null,
             ],
             'flash' => [

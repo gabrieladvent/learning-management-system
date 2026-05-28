@@ -31,6 +31,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return route('login');
         });
+
+        // Heartbeat tracking pakai navigator.sendBeacon di pagehide — beacon tidak
+        // bisa attach header CSRF custom. Endpoint tetap di-protect oleh guard
+        // `student` (auth session) + payload tracking saja (tidak destructive).
+        // Lihat docs/11-learning-progress-tracking.md §5.1.
+        $middleware->validateCsrfTokens(except: [
+            'student/progress/heartbeat',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

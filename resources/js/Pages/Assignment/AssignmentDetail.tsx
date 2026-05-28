@@ -21,7 +21,7 @@ import {
     type AssignmentStatus,
 } from '@/Components/Assignment';
 import { StudentLayout } from '@/Layouts';
-import { fadeUp, staggerContainer } from '@/lib';
+import { fadeUp, staggerContainer, useLearningProgress } from '@/lib';
 import { PageProps } from '@/types';
 
 function formatDateTime(iso: string | null): string | null {
@@ -52,6 +52,10 @@ const TONE_CLASS: Record<'amber' | 'rose' | 'sky' | 'emerald', { bg: string; bor
 export default function AssignmentDetail() {
     const { props } = usePage<PageProps<AssignmentDetailPageProps>>();
     const { course, material, assignment, submission, activities } = props;
+
+    useLearningProgress('assignment', assignment.id, {
+        enabled: !props.auth.student?.tracking_opt_out,
+    });
 
     const [editing, setEditing] = useState(false);
 

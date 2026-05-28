@@ -82,6 +82,12 @@ class StudentResource extends Resource
                     ->label('Siswa Aktif')
                     ->default(true),
 
+                Toggle::make('tracking_opt_out')
+                    ->label('Opt-out Learning Tracking')
+                    ->helperText('Jika aktif, sistem TIDAK akan mencatat aktivitas pembelajaran siswa ini (heartbeat, durasi material, dll). Lihat docs §8.1.')
+                    ->default(false)
+                    ->visible(fn () => auth()->user()?->hasRole('super_admin') ?? false),
+
                 TextInput::make('place_of_birth')
                     ->label('Tempat Lahir')
                     ->maxLength(100),
@@ -147,6 +153,15 @@ class StudentResource extends Resource
                     ->label('Aktif')
                     ->boolean(),
 
+                IconColumn::make('tracking_opt_out')
+                    ->label('Opt-out Tracking')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-no-symbol')
+                    ->trueColor('warning')
+                    ->falseIcon('heroicon-o-eye')
+                    ->falseColor('success')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 TextColumn::make('user.last_login_at')
                     ->label('Login Terakhir')
                     ->since()
@@ -164,6 +179,9 @@ class StudentResource extends Resource
 
                 TernaryFilter::make('is_active')
                     ->label('Status Aktif'),
+
+                TernaryFilter::make('tracking_opt_out')
+                    ->label('Opt-out Tracking'),
             ])
             ->actions([
                 ViewAction::make(),
