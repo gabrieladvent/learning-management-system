@@ -41,6 +41,7 @@ class DeploymentHookCommand extends Command
             if ($this->option('seed')) {
                 $steps[] = ['db:seed', ['--force' => true], 'Seeding database'];
             }
+
         } else {
             $this->line('  ⏭  Migrasi dilewati (--skip-migrations).');
         }
@@ -48,9 +49,13 @@ class DeploymentHookCommand extends Command
         // Buang dulu seluruh cache lama, baru bangun ulang. optimize:clear
         // mencakup config/route/view/event/cache + compiled.
         $steps[] = ['optimize:clear', [], 'Membersihkan cache lama'];
+
         $steps[] = ['config:cache', [], 'Cache config'];
+
         $steps[] = ['route:cache', [], 'Cache route'];
+
         $steps[] = ['view:cache', [], 'Cache view'];
+
         $steps[] = ['event:cache', [], 'Cache event'];
 
         // Filament 3 punya cache sendiri (komponen Blade + ikon). Wajib di
@@ -73,10 +78,13 @@ class DeploymentHookCommand extends Command
 
                 if ($exit !== self::SUCCESS) {
                     $failed++;
+
                     $this->error("    ✗ {$label} keluar dengan kode {$exit}.");
                 }
+
             } catch (Throwable $e) {
                 $failed++;
+
                 $this->error("    ✗ {$label} gagal: {$e->getMessage()}");
             }
         }
