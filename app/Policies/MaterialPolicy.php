@@ -2,8 +2,8 @@
 
 namespace App\Policies;
 
-use App\Models\Material;
 use App\Models\User;
+use App\Models\Material;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class MaterialPolicy

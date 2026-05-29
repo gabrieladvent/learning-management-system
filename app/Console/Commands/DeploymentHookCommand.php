@@ -46,6 +46,11 @@ class DeploymentHookCommand extends Command
             $this->line('  ⏭  Migrasi dilewati (--skip-migrations).');
         }
 
+        // Generate permission Filament Shield untuk panel teacher. Idempotent:
+        // permission yang sudah ada di-skip, yang baru (resource/page baru)
+        // ditambahkan. Jalan setelah migrate karena butuh tabel permissions.
+        $steps[] = ['shield:generate', ['--all' => true, '--panel' => 'teacher'], 'Generate Shield (panel teacher)'];
+
         // Buang dulu seluruh cache lama, baru bangun ulang. optimize:clear
         // mencakup config/route/view/event/cache + compiled.
         $steps[] = ['optimize:clear', [], 'Membersihkan cache lama'];
