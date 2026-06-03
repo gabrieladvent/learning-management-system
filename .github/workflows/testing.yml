@@ -51,6 +51,7 @@ jobs:
 
       - name: Override env for testing
         run: |
+          echo "APP_ENV=testing" >> .env.testing
           echo "VITE_MANIFEST_SKIP=true" >> .env.testing
           echo "SESSION_DRIVER=array" >> .env.testing
           echo "CACHE_STORE=array" >> .env.testing
