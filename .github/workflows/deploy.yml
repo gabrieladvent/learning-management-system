@@ -1,0 +1,60 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      note:
+        description: 'Catatan deploy (opsional)'
+        required: false
+
+jobs:
+  deploy:
+    name: Manual Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        id: deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script: |
+            cd /var/www/learning-management-system
+            bash production.sh
+
+      - name: Notify Telegram - Success
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ✅ <b>Deploy Berhasil!</b>
+            ━━━━━━━━━━━━━━━━━━━━
+            📦 Repo     : <code>${{ github.repository }}</code>
+            🌿 Branch   : <code>${{ github.ref_name }}</code>
+            👤 By       : @${{ github.actor }}
+            📝 Note     : ${{ github.event.inputs.note || '-' }}
+            ━━━━━━━━━━━━━━━━━━━━
+            🚀 LMS sudah online!
+
+      - name: Notify Telegram - Failure
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          format: html
+          message: |
+            ❌ <b>Deploy Gagal!</b>
+            ━━━━━━━━━━━━━━━━━━━━
+            📦 Repo     : <code>${{ github.repository }}</code>
+            🌿 Branch   : <code>${{ github.ref_name }}</code>
+            👤 By       : @${{ github.actor }}
+            📝 Note     : ${{ github.event.inputs.note || '-' }}
+            ━━━━━━━━━━━━━━━━━━━━
+            ⚠️ Cek Actions log untuk detail error.
