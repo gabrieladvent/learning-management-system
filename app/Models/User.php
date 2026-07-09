@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Filament\Models\Contracts\FilamentUser;
+use Filament\Models\Contracts\HasAvatar;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -10,13 +11,16 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, HasAvatar, HasMedia
 {
     use HasFactory;
     use HasRoles;
     use HasUuids;
+    use InteractsWithMedia;
     use Notifiable;
     use SoftDeletes;
 
@@ -51,6 +55,28 @@ class User extends Authenticatable implements FilamentUser
     public function canAccessPanel(Panel $panel): bool
     {
         return $this->hasAnyRole(['super_admin', 'teacher']);
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('avatar')
+            ->singleFile()
+            ->acceptsMimeTypes(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
+    }
+
+    /**
+     * URL avatar untuk ditampilkan di Filament (user menu) dan frontend siswa.
+     */
+    public function getAvatarUrl(): ?string
+    {
+        $url = $this->getFirstMediaUrl('avatar');
+
+        return $url !== '' ? $url : null;
+    }
+
+    public function getFilamentAvatarUrl(): ?string
+    {
+        return $this->getAvatarUrl();
     }
 
     public function teacher(): HasOne
