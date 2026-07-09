@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Auth\EditProfile;
 use App\Filament\Widgets\AtRiskStudentsWidget;
 use App\Filament\Widgets\ClassroomStatsWidget;
 use App\Filament\Widgets\PendingGradingWidget;
@@ -33,6 +34,7 @@ class TeacherPanelProvider extends PanelProvider
             ->id('teacher')
             ->path('teacher')
             ->login()
+            ->profile(EditProfile::class, isSimple: false)
             ->colors([
                 'primary' => Color::Sky,
             ])

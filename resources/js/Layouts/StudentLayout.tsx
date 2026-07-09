@@ -39,12 +39,29 @@ export default function StudentLayout({ children, title }: PropsWithChildren<Pro
 
                     {student && (
                         <div className="flex items-center gap-3">
-                            <div className="hidden text-right sm:block">
-                                <div className="text-sm font-medium leading-tight text-slate-900">
-                                    {student.full_name}
+                            <Link
+                                href={route('student.profile.edit')}
+                                className="flex items-center gap-2 rounded-lg px-1.5 py-1 transition hover:bg-slate-100"
+                                aria-label="Profil"
+                            >
+                                <div className="hidden text-right sm:block">
+                                    <div className="text-sm font-medium leading-tight text-slate-900">
+                                        {student.full_name}
+                                    </div>
+                                    <div className="text-xs text-slate-500">NISN {student.nisn}</div>
                                 </div>
-                                <div className="text-xs text-slate-500">NISN {student.nisn}</div>
-                            </div>
+                                {student.avatar_url ? (
+                                    <img
+                                        src={student.avatar_url}
+                                        alt={student.full_name}
+                                        className="h-9 w-9 rounded-full object-cover ring-2 ring-slate-100"
+                                    />
+                                ) : (
+                                    <span className="flex h-9 w-9 items-center justify-center rounded-full bg-sky-600 text-sm font-semibold text-white">
+                                        {student.full_name.charAt(0).toUpperCase()}
+                                    </span>
+                                )}
+                            </Link>
                             <TodoSidePanelButton />
                             <NotificationsDropdown />
                             <button

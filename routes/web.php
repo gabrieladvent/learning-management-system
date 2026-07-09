@@ -8,6 +8,7 @@ use App\Http\Controllers\Student\DashboardController as StudentDashboardControll
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\MaterialController as StudentMaterialController;
 use App\Http\Controllers\Student\NotificationController as StudentNotificationController;
+use App\Http\Controllers\Student\ProfileController as StudentProfileController;
 use App\Http\Controllers\Student\ProgressController as StudentProgressController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,11 @@ Route::prefix('student')->name('student.')->group(function () {
         Route::get('exams/sessions/{session}', [StudentExamController::class, 'take'])->name('exams.take');
         Route::post('exams/sessions/{session}/submit', [StudentExamController::class, 'submit'])->name('exams.submit');
         Route::get('exams/sessions/{session}/result', [StudentExamController::class, 'result'])->name('exams.result');
+
+        // Profil siswa: ganti password, upload foto, lihat progress.
+        Route::get('profile', [StudentProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('profile/password', [StudentProfileController::class, 'updatePassword'])->name('profile.password');
+        Route::post('profile/photo', [StudentProfileController::class, 'updatePhoto'])->name('profile.photo');
 
         Route::get('notifications', [StudentNotificationController::class, 'index'])->name('notifications.index');
         Route::post('notifications/read-all', [StudentNotificationController::class, 'markAllRead'])->name('notifications.read-all');
