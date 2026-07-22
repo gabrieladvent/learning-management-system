@@ -77,7 +77,7 @@ class GetStudentExam
                 'status' => $status,
             ],
             'session' => $session ? $this->mapSession($session, $exam) : null,
-            'submission' => $submission ? $this->mapSubmission($submission) : null,
+            'submission' => $submission ? $this->mapSubmission($submission, $material->id, $exam->id) : null,
             'activities' => $session
                 ? $this->buildSessionActivities($session, $exam)
                 : ($submission ? $this->buildSubmissionActivities($submission, $exam) : []),
@@ -166,7 +166,7 @@ class GetStudentExam
     /**
      * @return array<string, mixed>
      */
-    private function mapSubmission(ExamSubmission $submission): array
+    private function mapSubmission(ExamSubmission $submission, string $materialId, string $examId): array
     {
         $files = $submission->getMedia('submission_files')->map(fn ($media) => [
             'id' => $media->uuid ?? (string) $media->id,
@@ -175,7 +175,11 @@ class GetStudentExam
             'mime_type' => $media->mime_type,
             'size' => $media->size,
             'extension' => pathinfo($media->file_name, PATHINFO_EXTENSION),
-            'url' => $media->getUrl(),
+            'url' => route('student.exams.submission-files.download', [
+                'material' => $materialId,
+                'exam' => $examId,
+                'media' => $media->uuid ?? $media->id,
+            ]),
         ])->values()->all();
 
         return [

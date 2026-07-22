@@ -61,7 +61,8 @@ command -v npm >/dev/null         && ok "npm: $(npm -v)"                       |
 
 if [ -f .env ] && grep -q '^APP_KEY=base64:' .env; then ok "APP_KEY terisi"; else err "APP_KEY kosong — jalankan: php artisan key:generate"; fail=1; fi
 if [ -f .env ] && grep -q '^APP_ENV=production' .env; then ok "APP_ENV=production"; else warn "APP_ENV bukan production"; fi
-if [ -f .env ] && grep -q '^APP_DEBUG=false' .env; then ok "APP_DEBUG=false"; else warn "APP_DEBUG bukan false — MATIKAN di production"; fi
+if [ -f .env ] && grep -q '^APP_DEBUG=false' .env; then ok "APP_DEBUG=false"; else err "APP_DEBUG bukan false — WAJIB false di production (kebocoran info)"; fail=1; fi
+if [ -f .env ] && grep -q '^MEDIA_DISK=public' .env; then err "MEDIA_DISK=public — file bisa diunduh tanpa auth. Set MEDIA_DISK=local"; fail=1; fi
 
 if [ "$fail" = "1" ]; then err "Pengecekan lingkungan gagal. Perbaiki dulu hal di atas."; exit 1; fi
 

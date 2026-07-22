@@ -61,7 +61,11 @@ class GetStudentAssignment
             'mime_type' => $media->mime_type,
             'size' => $media->size,
             'extension' => pathinfo($media->file_name, PATHINFO_EXTENSION),
-            'url' => $media->getUrl(),
+            'url' => route('student.assignments.attachments.download', [
+                'material' => $material->id,
+                'assignment' => $assignment->id,
+                'media' => $media->uuid ?? $media->id,
+            ]),
         ])->values()->all();
 
         $course = $material->classroomSubject;
@@ -99,7 +103,7 @@ class GetStudentAssignment
                 'status' => $status,
                 'attachments' => $attachments,
             ],
-            'submission' => $submission ? $this->mapSubmission($submission) : null,
+            'submission' => $submission ? $this->mapSubmission($submission, $material->id, $assignment->id) : null,
             'activities' => $this->buildActivities($assignment, $submission),
         ];
     }
@@ -193,7 +197,7 @@ class GetStudentAssignment
     /**
      * @return array<string, mixed>
      */
-    private function mapSubmission(AssignmentSubmission $submission): array
+    private function mapSubmission(AssignmentSubmission $submission, string $materialId, string $assignmentId): array
     {
         $files = $submission->getMedia('submission_files')->map(fn ($media) => [
             'id' => $media->uuid ?? (string) $media->id,
@@ -202,7 +206,11 @@ class GetStudentAssignment
             'mime_type' => $media->mime_type,
             'size' => $media->size,
             'extension' => pathinfo($media->file_name, PATHINFO_EXTENSION),
-            'url' => $media->getUrl(),
+            'url' => route('student.assignments.submission-files.download', [
+                'material' => $materialId,
+                'assignment' => $assignmentId,
+                'media' => $media->uuid ?? $media->id,
+            ]),
         ])->values()->all();
 
         return [

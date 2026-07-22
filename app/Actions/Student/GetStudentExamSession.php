@@ -60,7 +60,7 @@ class GetStudentExamSession
             mt_srand();
         }
 
-        $questions = $questions->map(fn (ExamQuestion $q) => $this->mapQuestion($q))->all();
+        $questions = $questions->map(fn (ExamQuestion $q) => $this->mapQuestion($q, $session->id))->all();
         $answers = $session->answers->mapWithKeys(fn ($a) => [$a->exam_question_id => $a->answer])->all();
         $expiresAt = $session->started_at?->copy()->addMinutes($exam->duration_minutes);
 
@@ -99,7 +99,7 @@ class GetStudentExamSession
     /**
      * @return array<string, mixed>
      */
-    private function mapQuestion(ExamQuestion $question): array
+    private function mapQuestion(ExamQuestion $question, string $sessionId): array
     {
         $files = $question->getMedia('question_files')->map(fn (Media $media) => [
             'id' => $media->uuid ?? (string) $media->id,
@@ -108,7 +108,10 @@ class GetStudentExamSession
             'mime_type' => $media->mime_type,
             'size' => $media->size,
             'extension' => pathinfo($media->file_name, PATHINFO_EXTENSION),
-            'url' => $media->getUrl(),
+            'url' => route('student.exams.questions.download', [
+                'session' => $sessionId,
+                'media' => $media->uuid ?? $media->id,
+            ]),
         ])->values()->all();
 
         return [

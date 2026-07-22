@@ -168,8 +168,10 @@ class MaterialResource extends Resource
                             $media = $record->getMedia('material_files');
                             $items = $media->map(function ($m) {
                                 $size = number_format($m->size / 1024, 1).' KB';
+                                // Disk privat → butuh signed URL (getUrl() unsigned = 403).
+                                $url = $m->getTemporaryUrl(now()->addMinutes(30));
 
-                                return '<a href="'.$m->getUrl().'" target="_blank" '
+                                return '<a href="'.$url.'" target="_blank" '
                                     .'class="flex items-center gap-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 '
                                     .'hover:bg-gray-50 dark:hover:bg-gray-800 transition mb-2">'
                                     .'<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary-500 flex-shrink-0" '
