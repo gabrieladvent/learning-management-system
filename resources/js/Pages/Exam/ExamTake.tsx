@@ -12,6 +12,9 @@ import { PageProps } from '@/types';
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const DEBOUNCE_MS = 800;
+const MAX_SAVE_RETRIES = 3;
+const RETRY_BACKOFF_MS = 600;
+const SAVE_TIMEOUT_MS = 15000;
 
 export default function ExamTake() {
     const { props } = usePage<PageProps<ExamTakePageProps>>();
@@ -25,15 +28,18 @@ export default function ExamTake() {
 
     const expiredHandledRef = useRef(false);
     const pendingTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+    const pendingValuesRef = useRef<Record<string, string | null>>({});
+    const inFlightRef = useRef<Set<Promise<unknown>>>(new Set());
+    const flushRef = useRef<(() => Promise<void>) | null>(null);
 
     const submitSession = useCallback(
-        (auto: boolean) => {
+        async (auto: boolean) => {
             if (submitting) return;
             setSubmitting(true);
 
-            // Pastikan semua pending auto-save selesai sebelum submit final.
-            Object.values(pendingTimersRef.current).forEach((id) => clearTimeout(id));
-            pendingTimersRef.current = {};
+            try {
+                await flushRef.current?.();
+            } catch { }
 
             router.post(
                 route('student.exams.submit', { session: session.id }),
@@ -82,59 +88,103 @@ export default function ExamTake() {
     const handleSessionClosed = useCallback(
         (reason: string) => {
             toast.info(reason);
-            // Stop semua pending save & redirect ke result.
             Object.values(pendingTimersRef.current).forEach((id) => clearTimeout(id));
             pendingTimersRef.current = {};
+            pendingValuesRef.current = {};
             router.visit(route('student.exams.result', { session: session.id }));
         },
         [session.id],
     );
 
     const persistAnswer = useCallback(
-        (questionId: string, value: string | null) => {
+        (questionId: string, value: string | null): Promise<void> => {
             setSaveStatus('saving');
-            window.axios
-                .post(route('student.exams.answer', { session: session.id }), {
-                    question_id: questionId,
-                    answer: value,
-                })
-                .then(() => setSaveStatus('saved'))
-                .catch((err) => {
-                    setSaveStatus('error');
-                    const sessionError = err?.response?.data?.errors?.session?.[0] as string | undefined;
-                    const message =
-                        sessionError ??
-                        err?.response?.data?.message ??
-                        'Gagal menyimpan jawaban — periksa koneksi.';
 
-                    // Match pesan dari SaveExamAnswer.php:
-                    //  - "Ujian sudah dikumpulkan, tidak bisa diubah lagi."
-                    //  - "Waktu ujian sudah habis."
-                    // Kedua kondisi = session closed, antar siswa ke hasil supaya tidak stuck.
-                    if (sessionError && (sessionError.includes('dikumpulkan') || sessionError.includes('habis'))) {
-                        handleSessionClosed(sessionError);
+            const attempt = (tryNo: number): Promise<void> =>
+                window.axios
+                    .post(
+                        route('student.exams.answer', { session: session.id }),
+                        { question_id: questionId, answer: value },
+                        { timeout: SAVE_TIMEOUT_MS },
+                    )
+                    .then(() => {
+                        if (pendingValuesRef.current[questionId] === value) {
+                            delete pendingValuesRef.current[questionId];
+                        }
 
-                        return;
-                    }
+                        setSaveStatus('saved');
+                    })
+                    .catch((err) => {
+                        const status = err?.response?.status as number | undefined;
+                        const sessionError = err?.response?.data?.errors?.session?.[0] as string | undefined;
 
-                    toast.error(message);
-                });
+                        if (sessionError && (sessionError.includes('dikumpulkan') || sessionError.includes('habis'))) {
+                            handleSessionClosed(sessionError);
+
+                            return;
+                        }
+
+                        const retriable = status === undefined || status >= 500;
+                        if (retriable && tryNo < MAX_SAVE_RETRIES) {
+                            return new Promise<void>((resolve) =>
+                                setTimeout(resolve, RETRY_BACKOFF_MS * 2 ** tryNo),
+                            ).then(() => attempt(tryNo + 1));
+                        }
+
+                        setSaveStatus('error');
+                        toast.error(
+                            err?.response?.data?.message ??
+                            'Gagal menyimpan jawaban — periksa koneksi. Jawaban akan dicoba lagi saat mengumpulkan.',
+                        );
+
+                        throw err;
+                    });
+
+            const promise = attempt(0);
+            inFlightRef.current.add(promise);
+            const cleanup = () => inFlightRef.current.delete(promise);
+            promise.then(cleanup, cleanup);
+
+            return promise;
         },
         [session.id, handleSessionClosed],
     );
 
     const scheduleSave = useCallback(
         (questionId: string, value: string | null) => {
+            // Tandai dirty dulu supaya flush-before-submit selalu melihat nilai terbaru.
+            pendingValuesRef.current[questionId] = value;
+
             const existing = pendingTimersRef.current[questionId];
             if (existing) clearTimeout(existing);
 
             pendingTimersRef.current[questionId] = setTimeout(() => {
                 delete pendingTimersRef.current[questionId];
-                persistAnswer(questionId, value);
+                void persistAnswer(questionId, value);
             }, DEBOUNCE_MS);
         },
         [persistAnswer],
     );
+
+    /**
+     * Paksa semua auto-save yang pending (debounce belum jalan) + yang sedang
+     * in-flight untuk selesai. Dipanggil sebelum submit final. Menggunakan
+     * allSettled supaya satu kegagalan tidak membatalkan submit.
+     */
+    const flushPending = useCallback(async (): Promise<void> => {
+        const pending = { ...pendingValuesRef.current };
+
+        Object.values(pendingTimersRef.current).forEach((id) => clearTimeout(id));
+        pendingTimersRef.current = {};
+
+        const fired = Object.entries(pending).map(([questionId, value]) => persistAnswer(questionId, value));
+
+        await Promise.allSettled([...fired, ...inFlightRef.current]);
+    }, [persistAnswer]);
+
+    useEffect(() => {
+        flushRef.current = flushPending;
+    }, [flushPending]);
 
     const handleAnswerChange = (questionId: string, value: string | null) => {
         setAnswers((prev) => ({ ...prev, [questionId]: value }));
@@ -380,8 +430,8 @@ function SaveBadge({ status }: { status: SaveStatus }) {
         status === 'error'
             ? 'bg-rose-50 text-rose-700'
             : status === 'saving'
-              ? 'bg-slate-50 text-slate-600'
-              : 'bg-emerald-50 text-emerald-700';
+                ? 'bg-slate-50 text-slate-600'
+                : 'bg-emerald-50 text-emerald-700';
 
     return (
         <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium ${tone}`}>
