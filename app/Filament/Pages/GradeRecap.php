@@ -110,15 +110,37 @@ class GradeRecap extends Page implements HasForms, HasTable
             ->toArray();
     }
 
+    /**
+     * Hanya super_admin dan guru (yang punya record Teacher) yang boleh membuka
+     * halaman rekap nilai. Tanpa ini, Page tidak punya proteksi policy/route-binding.
+     */
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        return (bool) ($user?->hasRole('super_admin') || $user?->teacher);
+    }
+
     public function getCourse(): ?ClassroomSubject
     {
         if (! $this->classroomSubjectId) {
             return null;
         }
 
-        return ClassroomSubject::query()
+        // Scope kepemilikan WAJIB di sini — `classroomSubjectId` adalah public
+        // Livewire property yang bisa di-set klien ke id course guru lain (IDOR).
+        // Dropdown di courseOptions() hanya kosmetik; enforcement ada di query ini.
+        $query = ClassroomSubject::query()
             ->with(['classroom', 'subject', 'teacher.user'])
-            ->find($this->classroomSubjectId);
+            ->whereKey($this->classroomSubjectId);
+
+        $user = auth()->user();
+
+        if (! $user?->hasRole('super_admin') && $user?->teacher) {
+            $query->where('teacher_id', $user->teacher->id);
+        }
+
+        return $query->first();
     }
 
     public function table(Table $table): Table
