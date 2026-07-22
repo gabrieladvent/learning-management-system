@@ -35,12 +35,17 @@ class TeacherImport implements SkipsOnError, ToModel, WithHeadingRow, WithValida
             }
         }
 
-        $password = $birthDate ? $birthDate->format('dmY') : 'teacher123';
+        // Tanpa tanggal lahir, tidak ada password default yang aman untuk di-set.
+        // Skip baris ini — JANGAN pakai password statis bersama (mis. 'teacher123')
+        // yang bisa dipakai siapa saja untuk login sebagai guru.
+        if (! $birthDate) {
+            return null;
+        }
 
         $user = User::create([
             'name' => $row['nama_lengkap'],
             'email' => $row['email'],
-            'password' => $password,
+            'password' => $birthDate->format('dmY'),
             'is_active' => true,
         ]);
 

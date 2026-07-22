@@ -32,7 +32,11 @@ return [
      * The disk on which to store added files and derived images by default. Choose
      * one or more of the disks you've configured in config/filesystems.php.
      */
-    'disk_name' => env('MEDIA_DISK', 'public'),
+    // Default disk PRIVAT (`local` = storage/app/private, tidak web-accessible).
+    // File material/soal/jawaban TIDAK boleh live di disk `public` yang bisa
+    // diunduh siapa saja lewat URL /storage tanpa auth. Semua akses siswa
+    // disalurkan lewat route berautorisasi (lihat controller Student\*).
+    'disk_name' => env('MEDIA_DISK', 'local'),
 
     /*
      * The maximum file size of an item in bytes.

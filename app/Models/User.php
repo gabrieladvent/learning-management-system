@@ -54,12 +54,18 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasMedia
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->hasAnyRole(['super_admin', 'teacher']);
+        // is_active WAJIB dicek di sini — tanpa ini, user yang di-nonaktifkan tetap
+        // bisa mengakses panel sampai sesinya kedaluwarsa.
+        return $this->is_active && $this->hasAnyRole(['super_admin', 'teacher']);
     }
 
     public function registerMediaCollections(): void
     {
+        // Avatar sengaja di disk `public`: ditampilkan lewat <img src> yang butuh
+        // URL stabil (bukan signed/expiring). Sensitivitasnya rendah (foto profil).
+        // File sensitif (materi/soal/jawaban) ada di disk privat default (local).
         $this->addMediaCollection('avatar')
+            ->useDisk('public')
             ->singleFile()
             ->acceptsMimeTypes(['image/png', 'image/jpeg', 'image/jpg', 'image/webp']);
     }

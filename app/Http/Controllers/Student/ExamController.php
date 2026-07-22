@@ -9,6 +9,9 @@ use App\Actions\Student\StartExamSession;
 use App\Actions\Student\SubmitExamSession;
 use App\Actions\Student\SubmitExamSubmission;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Student\Concerns\ServesGuardedMedia;
+use App\Models\ExamSession;
+use App\Models\ExamSubmission;
 use App\Models\Student;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,9 +19,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ExamController extends Controller
 {
+    use ServesGuardedMedia;
+
     /**
      * Start screen exam (sebelum klik Mulai).
      * Untuk mode `online_quiz`: tampilkan info exam + tombol mulai/lanjutkan/lihat hasil.
@@ -147,6 +154,56 @@ class ExamController extends Controller
         return redirect()
             ->route('student.exams.show', ['material' => $material, 'exam' => $exam])
             ->with('success', 'Ujian berhasil dikumpulkan.');
+    }
+
+    /**
+     * Download file lampiran soal ujian. Otorisasi lewat kepemilikan session:
+     * siswa hanya bisa mengunduh file soal dari session ujian miliknya sendiri.
+     */
+    public function downloadQuestionFile(string $session, string $media): BinaryFileResponse
+    {
+        $student = $this->student();
+
+        $examSession = ExamSession::query()
+            ->whereKey($session)
+            ->where('student_id', $student->id)
+            ->with('exam.questions')
+            ->first();
+
+        if (! $examSession || ! $examSession->exam) {
+            throw new NotFoundHttpException('Session ujian tidak ditemukan.');
+        }
+
+        $question = $examSession->exam->questions->first(
+            fn ($q) => $q->getMedia('question_files')
+                ->contains(fn ($m) => (string) $m->id === $media || $m->uuid === $media)
+        );
+
+        if (! $question) {
+            throw new NotFoundHttpException('File tidak ditemukan.');
+        }
+
+        return $this->streamMediaFromCollection($question, 'question_files', $media);
+    }
+
+    /**
+     * Download file jawaban ujian (mode submission). Otorisasi lewat kepemilikan:
+     * hanya submission milik siswa itu sendiri.
+     */
+    public function downloadSubmissionFile(string $material, string $exam, string $media): BinaryFileResponse
+    {
+        $student = $this->student();
+
+        $submission = ExamSubmission::query()
+            ->where('exam_id', $exam)
+            ->where('student_id', $student->id)
+            ->first();
+
+        if (! $submission) {
+            throw new NotFoundHttpException('Pengumpulan ujian tidak ditemukan.');
+        }
+
+        return $this->streamMediaFromCollection($submission, 'submission_files', $media);
     }
 
     private function student(): Student
