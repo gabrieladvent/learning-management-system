@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\ScopesToCurrentTeacher;
 use App\Filament\Resources\ExamResource\Pages;
 use App\Filament\Resources\ExamResource\RelationManagers;
 use App\Models\Enums\ExamModeEnum;
@@ -33,6 +34,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class ExamResource extends Resource
 {
+    use ScopesToCurrentTeacher;
+
     protected static ?string $model = Exam::class;
 
     protected static bool $shouldRegisterNavigation = false;
@@ -43,20 +46,10 @@ class ExamResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()
-            ->with(['material.classroomSubject']);
-
-        $user = auth()->user();
-
-        if ($user?->hasRole('super_admin')) {
-            return $query;
-        }
-
-        if ($user?->teacher) {
-            return $query->whereHas('material.classroomSubject', fn ($q) => $q->where('teacher_id', $user->teacher->id));
-        }
-
-        return $query->whereRaw('1 = 0');
+        return static::scopeToCurrentTeacher(
+            parent::getEloquentQuery()->with(['material.classroomSubject']),
+            'material.classroomSubject',
+        );
     }
 
     public static function form(Form $form): Form

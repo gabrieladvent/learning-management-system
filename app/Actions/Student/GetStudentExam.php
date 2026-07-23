@@ -2,6 +2,7 @@
 
 namespace App\Actions\Student;
 
+use App\Models\Enums\ExamModeEnum;
 use App\Models\Exam;
 use App\Models\ExamSession;
 use App\Models\ExamSubmission;
@@ -89,7 +90,7 @@ class GetStudentExam
      */
     private function computeStatus(Exam $exam, ?ExamSession $session, ?ExamSubmission $submission): string
     {
-        if ($exam->mode->value === 'online_quiz') {
+        if ($exam->mode === ExamModeEnum::OnlineQuiz) {
             if (! $session) {
                 return 'belum_mulai';
             }

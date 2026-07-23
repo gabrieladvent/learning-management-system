@@ -8,6 +8,7 @@ use App\Models\Exam;
 use App\Models\LearningProgressSession;
 use App\Models\Material;
 use App\Models\Student;
+use App\Support\ActiveTimeCalculator;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -237,17 +238,18 @@ class RecordLearningProgress
         $sessionIdToStore = $isComeback ? (string) Str::uuid() : $clientSessionId;
         $isReplacement = $sessionIdToStore !== $clientSessionId;
 
-        // Compute incremental delta.
+        // Compute incremental delta (algoritma murni di ActiveTimeCalculator).
+        $calculator = new ActiveTimeCalculator;
         if ($isContinuation) {
             // SELECT 2 (continuation only): fetch state anchor — last persisted event for this session.
             $anchor = $this->fetchStateAnchor($existing);
-            [$deltaActiveMs, $deltaIdleMs] = $this->computeDelta($anchor, $sorted, $maxGapMs);
+            [$deltaActiveMs, $deltaIdleMs] = $calculator->computeDelta($anchor, $sorted, $maxGapMs);
         } else {
-            [$deltaActiveMs, $deltaIdleMs] = $this->computeDelta(null, $sorted, $maxGapMs);
+            [$deltaActiveMs, $deltaIdleMs] = $calculator->computeDelta(null, $sorted, $maxGapMs);
         }
 
         $lastOccurred = end($sorted)['occurred_at'];
-        $hasClose = $this->batchHasClose($sorted);
+        $hasClose = $calculator->hasClose($sorted);
 
         // INSERT events — 1 query.
         $eventRows = $this->buildEventRows(
@@ -344,73 +346,6 @@ class RecordLearningProgress
             'occurred_at' => $anchorOccurredAt,
             'state' => $state,
         ];
-    }
-
-    /**
-     * Compute delta_active_ms and delta_idle_ms attributable to the new batch.
-     *
-     * @param  array{occurred_at:CarbonImmutable, state:string}|null  $anchor  prior state for continuation (null for new session)
-     * @param  array<int,array<string,mixed>>  $sorted  new batch sorted ASC
-     * @return array{0:int,1:int}
-     */
-    private function computeDelta(?array $anchor, array $sorted, int $maxGapMs): array
-    {
-        $activeMs = 0;
-        $idleMs = 0;
-
-        if ($anchor !== null) {
-            $prevTime = $anchor['occurred_at'];
-            $prevState = $anchor['state'];
-        } else {
-            $prevTime = null;
-            $prevState = 'active';
-        }
-
-        foreach ($sorted as $event) {
-            /** @var CarbonImmutable $currTime */
-            $currTime = $event['occurred_at'];
-            /** @var LearningProgressEventType $type */
-            $type = $event['event'];
-
-            if ($prevTime !== null) {
-                $deltaMs = $prevTime->diffInMilliseconds($currTime);
-                if ($deltaMs < 0) {
-                    $deltaMs = 0;
-                }
-                $deltaMs = min($maxGapMs, $deltaMs);
-
-                if ($prevState === 'active') {
-                    $activeMs += $deltaMs;
-                } elseif ($prevState === 'idle') {
-                    $idleMs += $deltaMs;
-                }
-            }
-
-            if ($type->isActiveState()) {
-                $prevState = 'active';
-            } elseif ($type->isIdleState()) {
-                $prevState = 'idle';
-            }
-            // heartbeat & close inherit prior state.
-
-            $prevTime = $currTime;
-        }
-
-        return [$activeMs, $idleMs];
-    }
-
-    /**
-     * @param  array<int,array<string,mixed>>  $sorted
-     */
-    private function batchHasClose(array $sorted): bool
-    {
-        foreach ($sorted as $event) {
-            if ($event['event'] === LearningProgressEventType::Close) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

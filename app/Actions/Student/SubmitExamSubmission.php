@@ -2,6 +2,7 @@
 
 namespace App\Actions\Student;
 
+use App\Models\Enums\ExamModeEnum;
 use App\Models\Exam;
 use App\Models\ExamSubmission;
 use App\Models\Material;
@@ -41,7 +42,7 @@ class SubmitExamSubmission
         $material = $this->resolveMaterial($student, $materialId);
         $exam = $this->resolveExam($material, $examId);
 
-        if ($exam->mode->value !== 'submission') {
+        if ($exam->mode !== ExamModeEnum::Submission) {
             throw ValidationException::withMessages([
                 'mode' => 'Ujian ini bukan mode submission.',
             ]);
