@@ -75,7 +75,10 @@ class StudentImport implements OnEachRow, SkipsOnError, WithHeadingRow, WithVali
         }
 
         if (! isset($this->schoolCache[$name])) {
-            $this->schoolCache[$name] = School::where('name', 'like', "%{$name}%")->value('id');
+            // Exact match (case-insensitive). LIKE %name% berbahaya: "SMA 1" akan
+            // cocok dengan "SMA 10"/"SMA 11" dan hit pertama menang (salah sekolah).
+            $this->schoolCache[$name] = School::whereRaw('LOWER(name) = ?', [mb_strtolower(trim($name))])
+                ->value('id');
         }
 
         return $this->schoolCache[$name];

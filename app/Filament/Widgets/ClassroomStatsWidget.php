@@ -7,6 +7,7 @@ use App\Models\ClassroomSubject;
 use App\Models\Student;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Cache;
 
 class ClassroomStatsWidget extends BaseWidget
 {
@@ -16,30 +17,39 @@ class ClassroomStatsWidget extends BaseWidget
     {
         $user = auth()->user();
         $teacher = $user?->teacher;
+        $isSuperAdmin = $user?->hasRole('super_admin') ?? false;
 
-        if ($user?->hasRole('super_admin')) {
-            $classroomCount = Classroom::query()->count();
-            $courseCount = ClassroomSubject::query()->count();
-            $studentCount = Student::query()->where('is_active', true)->count();
-        } elseif ($teacher) {
-            $courses = ClassroomSubject::query()
-                ->where('teacher_id', $teacher->id);
+        [$classroomCount, $courseCount, $studentCount] = Cache::remember(
+            'dash:classstats:'.($user?->id ?? 'guest'),
+            now()->addSeconds(60),
+            function () use ($teacher, $isSuperAdmin) {
+                if ($isSuperAdmin) {
+                    return [
+                        Classroom::query()->count(),
+                        ClassroomSubject::query()->count(),
+                        Student::query()->where('is_active', true)->count(),
+                    ];
+                }
 
-            $classroomCount = (clone $courses)->distinct('classroom_id')->count('classroom_id');
-            $courseCount = (clone $courses)->count();
+                if (! $teacher) {
+                    return [0, 0, 0];
+                }
 
-            $studentCount = Student::query()
-                ->whereHas('classrooms', fn ($q) => $q->whereIn(
-                    'classrooms.id',
-                    (clone $courses)->select('classroom_id')
-                ))
-                ->where('is_active', true)
-                ->count();
-        } else {
-            $classroomCount = 0;
-            $courseCount = 0;
-            $studentCount = 0;
-        }
+                $courses = ClassroomSubject::query()->where('teacher_id', $teacher->id);
+
+                return [
+                    (clone $courses)->distinct('classroom_id')->count('classroom_id'),
+                    (clone $courses)->count(),
+                    Student::query()
+                        ->whereHas('classrooms', fn ($q) => $q->whereIn(
+                            'classrooms.id',
+                            (clone $courses)->select('classroom_id')
+                        ))
+                        ->where('is_active', true)
+                        ->count(),
+                ];
+            }
+        );
 
         return [
             Stat::make('Kelas Diampu', $classroomCount)

@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -98,20 +99,33 @@ class AtRiskStudentsWidget extends BaseWidget
             return $this->rowsCache;
         }
 
+        // Cache lintas-request 60 detik per user. Angka "berisiko" boleh sedikit
+        // basi — jauh lebih murah daripada recompute agregat tiap render dashboard.
+        $user = auth()->user();
+        $cacheKey = 'dash:atrisk:'.($user?->id ?? 'guest');
+
+        return $this->rowsCache = Cache::remember($cacheKey, now()->addSeconds(60), fn () => $this->computeRows());
+    }
+
+    /**
+     * @return array<string, array<string,mixed>>
+     */
+    private function computeRows(): array
+    {
         $user = auth()->user();
         $isAdmin = $user?->hasRole('super_admin') ?? false;
 
         $csQuery = ClassroomSubject::query()->with(['classroom', 'subject']);
         if (! $isAdmin) {
             if (! $user?->teacher) {
-                return $this->rowsCache = [];
+                return [];
             }
             $csQuery->where('teacher_id', $user->teacher->id);
         }
 
         $courses = $csQuery->get();
         if ($courses->isEmpty()) {
-            return $this->rowsCache = [];
+            return [];
         }
 
         $csIds = $courses->pluck('id');
@@ -138,35 +152,33 @@ class AtRiskStudentsWidget extends BaseWidget
             ->all();
 
         // Overdue counts per (student × classroom_subject).
-        // Step 1: pull overdue assignments grouped by classroom_subject_id (via material).
-        $materialMap = Material::query()
+        // Map material → classroom_subject (1 query), lalu SATU query untuk semua
+        // overdue assignment (bukan 1 query per classroom_subject = N+1).
+        $materials = Material::query()
             ->whereIn('classroom_subject_id', $csIds)
             ->where('is_published', true)
-            ->get(['id', 'classroom_subject_id'])
-            ->groupBy('classroom_subject_id')
-            ->map(fn ($materials) => $materials->pluck('id')->all())
-            ->all();
+            ->get(['id', 'classroom_subject_id']);
 
-        $overduePairCounts = [];      // ["student_id|cs_id" => N]
-        $overdueCountByCs = [];        // [cs_id => N]
+        $matToCs = $materials->mapWithKeys(fn ($m) => [(string) $m->id => (string) $m->classroom_subject_id])->all();
+        $allMatIds = $materials->pluck('id')->all();
+
+        $overdueCountByCs = array_fill_keys($csIds->map(fn ($id) => (string) $id)->all(), 0);
         $allOverdueAssignmentIds = collect();
 
-        foreach ($csIds as $csId) {
-            $matIds = $materialMap[(string) $csId] ?? [];
-            if ($matIds === []) {
-                $overdueCountByCs[(string) $csId] = 0;
-
-                continue;
-            }
-            $overdueIds = Assignment::query()
-                ->whereIn('material_id', $matIds)
+        if ($allMatIds !== []) {
+            $overdueAssignments = Assignment::query()
+                ->whereIn('material_id', $allMatIds)
                 ->where('is_published', true)
                 ->where('deadline', '<', now())
-                ->pluck('id');
+                ->get(['id', 'material_id']);
 
-            $overdueCountByCs[(string) $csId] = $overdueIds->count();
-            foreach ($overdueIds as $aid) {
-                $allOverdueAssignmentIds->push(['cs_id' => (string) $csId, 'assignment_id' => $aid]);
+            foreach ($overdueAssignments as $a) {
+                $csId = $matToCs[(string) $a->material_id] ?? null;
+                if ($csId === null) {
+                    continue;
+                }
+                $overdueCountByCs[$csId] = ($overdueCountByCs[$csId] ?? 0) + 1;
+                $allOverdueAssignmentIds->push(['cs_id' => $csId, 'assignment_id' => $a->id]);
             }
         }
 
@@ -242,6 +254,6 @@ class AtRiskStudentsWidget extends BaseWidget
         // Sort: berisiko > pantau, take 10.
         uasort($out, fn ($a, $b) => ($b['status'] === 'berisiko' ? 2 : 1) <=> ($a['status'] === 'berisiko' ? 2 : 1));
 
-        return $this->rowsCache = array_slice($out, 0, 10, true);
+        return array_slice($out, 0, 10, true);
     }
 }

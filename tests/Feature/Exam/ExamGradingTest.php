@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Exam;
 
+use App\Actions\Student\GetStudentExamSession;
 use App\Actions\Student\SubmitExamSession;
 use App\Models\ExamAnswer;
 use App\Models\ExamQuestion;
@@ -95,6 +96,38 @@ class ExamGradingTest extends TestCase
 
         $this->assertSame(15.0, (float) $essayAnswer->fresh()->score, 'nilai essay manual tidak boleh ditimpa jadi null');
         $this->assertSame(15.0, (float) $ctx['session']->fresh()->total_score);
+    }
+
+    public function test_score_is_hidden_until_results_released(): void
+    {
+        $ctx = $this->scaffoldStudentWithMaterial();
+        $exam = $this->makeExam($ctx['material'], [
+            'starts_at' => Carbon::now()->subHour(),
+            'results_released_at' => Carbon::now()->addDay(), // belum dirilis
+        ]);
+        ExamQuestion::create([
+            'exam_id' => $exam->id, 'type' => 'multiple_choice', 'question' => 'q',
+            'options' => ['A' => '1'], 'correct_answer' => 'A', 'score' => 10, 'order' => 1,
+        ]);
+        $session = ExamSession::create([
+            'exam_id' => $exam->id,
+            'student_id' => $ctx['student']->id,
+            'started_at' => Carbon::now()->subMinutes(10),
+            'submitted_at' => Carbon::now()->subMinutes(2),
+            'total_score' => 10,
+        ]);
+
+        $action = app(GetStudentExamSession::class);
+
+        $before = $action->handle($ctx['student'], $session->id);
+        $this->assertNull($before['session']['total_score'], 'skor harus disembunyikan sebelum rilis');
+        $this->assertFalse($before['session']['results_released']);
+
+        $exam->update(['results_released_at' => Carbon::now()->subMinute()]);
+
+        $after = $action->handle($ctx['student'], $session->id);
+        $this->assertSame(10.0, $after['session']['total_score']);
+        $this->assertTrue($after['session']['results_released']);
     }
 
     public function test_submit_exam_session_is_idempotent(): void
