@@ -4,9 +4,10 @@ namespace App\Notifications;
 
 use App\Models\AssignmentSubmission;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class StudentAssignmentGraded extends Notification
+class StudentAssignmentGraded extends Notification implements ShouldQueue
 {
     use Queueable;
 

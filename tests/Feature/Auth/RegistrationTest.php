@@ -9,23 +9,21 @@ class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_screen_can_be_rendered(): void
+    /**
+     * Regresi H11: registrasi mandiri dimatikan. Akun hanya dibuat lewat panel
+     * admin / import, jadi /register tidak boleh ada.
+     */
+    public function test_registration_route_is_disabled(): void
     {
-        $response = $this->get('/register');
+        $this->get('/register')->assertNotFound();
 
-        $response->assertStatus(200);
-    }
-
-    public function test_new_users_can_register(): void
-    {
-        $response = $this->post('/register', [
+        $this->post('/register', [
             'name' => 'Test User',
             'email' => 'test@example.com',
             'password' => 'password',
             'password_confirmation' => 'password',
-        ]);
+        ])->assertNotFound();
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertGuest();
     }
 }

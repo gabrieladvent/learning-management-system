@@ -64,13 +64,23 @@ class GetStudentExamSession
         $answers = $session->answers->mapWithKeys(fn ($a) => [$a->exam_question_id => $a->answer])->all();
         $expiresAt = $session->started_at?->copy()->addMinutes($exam->duration_minutes);
 
+        // Skor disembunyikan sampai `results_released_at` lewat (kalau di-set) —
+        // konsisten dengan GetStudentMaterial. Tanpa gate ini siswa bisa lihat
+        // nilai lebih awal via halaman result.
+        $resultsReleased = $exam->results_released_at === null
+            || $exam->results_released_at->lessThanOrEqualTo(now());
+
         return [
             'session' => [
                 'id' => $session->id,
                 'started_at' => $session->started_at?->toIso8601String(),
                 'submitted_at' => $session->submitted_at?->toIso8601String(),
                 'expires_at' => $expiresAt?->toIso8601String(),
-                'total_score' => $session->total_score !== null ? (float) $session->total_score : null,
+                'total_score' => $resultsReleased && $session->total_score !== null
+                    ? (float) $session->total_score
+                    : null,
+                'results_released' => $resultsReleased,
+                'results_released_at' => $exam->results_released_at?->toIso8601String(),
             ],
             'exam' => [
                 'id' => $exam->id,

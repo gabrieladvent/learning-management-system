@@ -68,6 +68,7 @@ class AssignmentsRelationManager extends RelationManager
                     ->label('File Lampiran (dari Guru)')
                     ->collection('assignment_attachments')
                     ->multiple()
+                    ->maxSize(20480)
                     ->columnSpanFull(),
             ]),
 

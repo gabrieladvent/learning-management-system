@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -47,6 +48,13 @@ class AuthController extends Controller
             $authenticate->handle($request, $data['nisn'], $data['password']);
         } catch (ValidationException $e) {
             RateLimiter::hit($throttleKey, 60);
+
+            Log::warning('Student login gagal', [
+                'nisn' => $data['nisn'],
+                'ip' => $request->ip(),
+                'attempts' => RateLimiter::attempts($throttleKey),
+            ]);
+
             throw $e;
         }
 

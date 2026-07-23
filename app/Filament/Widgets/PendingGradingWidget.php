@@ -12,6 +12,7 @@ use App\Models\ExamSession;
 use App\Models\ExamSubmission;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Cache;
 
 class PendingGradingWidget extends BaseWidget
 {
@@ -22,47 +23,57 @@ class PendingGradingWidget extends BaseWidget
         $teacher = auth()->user()?->teacher;
         $isSuperAdmin = auth()->user()?->hasRole('super_admin') ?? false;
 
-        $assignmentIds = $this->scopedAssignmentIds($teacher, $isSuperAdmin);
-        $examIds = $this->scopedExamIds($teacher, $isSuperAdmin);
+        // Angka "belum dinilai" boleh basi ~60 detik — jauh lebih murah daripada
+        // 3 COUNT (termasuk subquery whereHas bersarang) tiap render dashboard.
+        $data = Cache::remember(
+            'dash:pending:'.(auth()->id() ?? 'guest'),
+            now()->addSeconds(60),
+            function () use ($teacher, $isSuperAdmin) {
+                $assignmentIds = $this->scopedAssignmentIds($teacher, $isSuperAdmin);
+                $examIds = $this->scopedExamIds($teacher, $isSuperAdmin);
 
-        $pendingAssignment = AssignmentSubmission::query()
-            ->whereIn('assignment_id', $assignmentIds)
-            ->whereNotNull('submitted_at')
-            ->whereNull('score')
-            ->count();
-
-        $pendingExamSubmission = ExamSubmission::query()
-            ->whereIn('exam_id', $examIds)
-            ->whereNotNull('submitted_at')
-            ->whereNull('score')
-            ->count();
-
-        $pendingEssaySession = ExamSession::query()
-            ->whereIn('exam_id', $examIds)
-            ->whereNotNull('submitted_at')
-            ->whereHas('answers', function ($q) {
-                $q->whereNull('score')
-                    ->whereHas('question', fn ($qq) => $qq->where('type', QuestionTypeEnum::Essay->value));
-            })
-            ->count();
+                return [
+                    'pendingAssignment' => AssignmentSubmission::query()
+                        ->whereIn('assignment_id', $assignmentIds)
+                        ->whereNotNull('submitted_at')
+                        ->whereNull('score')
+                        ->count(),
+                    'pendingExamSubmission' => ExamSubmission::query()
+                        ->whereIn('exam_id', $examIds)
+                        ->whereNotNull('submitted_at')
+                        ->whereNull('score')
+                        ->count(),
+                    'pendingEssaySession' => ExamSession::query()
+                        ->whereIn('exam_id', $examIds)
+                        ->whereNotNull('submitted_at')
+                        ->whereHas('answers', function ($q) {
+                            $q->whereNull('score')
+                                ->whereHas('question', fn ($qq) => $qq->where('type', QuestionTypeEnum::Essay->value));
+                        })
+                        ->count(),
+                    'hasAssignments' => $assignmentIds->isNotEmpty(),
+                    'hasExams' => $examIds->isNotEmpty(),
+                ];
+            }
+        );
 
         return [
-            Stat::make('Tugas Belum Dinilai', $pendingAssignment)
+            Stat::make('Tugas Belum Dinilai', $data['pendingAssignment'])
                 ->description('Submission masuk tanpa skor')
                 ->descriptionIcon('heroicon-o-clipboard-document-list')
-                ->color($pendingAssignment > 0 ? 'warning' : 'success')
-                ->url($assignmentIds->isNotEmpty() ? AssignmentResource::getUrl('index') : null),
+                ->color($data['pendingAssignment'] > 0 ? 'warning' : 'success')
+                ->url($data['hasAssignments'] ? AssignmentResource::getUrl('index') : null),
 
-            Stat::make('Ujian (Submission) Belum Dinilai', $pendingExamSubmission)
+            Stat::make('Ujian (Submission) Belum Dinilai', $data['pendingExamSubmission'])
                 ->description('Submission masuk tanpa skor')
                 ->descriptionIcon('heroicon-o-arrow-up-tray')
-                ->color($pendingExamSubmission > 0 ? 'warning' : 'success')
-                ->url($examIds->isNotEmpty() ? ExamResource::getUrl('index') : null),
+                ->color($data['pendingExamSubmission'] > 0 ? 'warning' : 'success')
+                ->url($data['hasExams'] ? ExamResource::getUrl('index') : null),
 
-            Stat::make('Essay Belum Dinilai', $pendingEssaySession)
+            Stat::make('Essay Belum Dinilai', $data['pendingEssaySession'])
                 ->description('Sesi online quiz dengan essay tertunda')
                 ->descriptionIcon('heroicon-o-pencil-square')
-                ->color($pendingEssaySession > 0 ? 'warning' : 'success'),
+                ->color($data['pendingEssaySession'] > 0 ? 'warning' : 'success'),
         ];
     }
 

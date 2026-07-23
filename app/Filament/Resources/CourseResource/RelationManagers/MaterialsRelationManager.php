@@ -60,6 +60,7 @@ class MaterialsRelationManager extends RelationManager
                         ->label('Upload File')
                         ->collection('material_files')
                         ->multiple()
+                        ->maxSize(20480)
                         ->columnSpanFull(),
 
                     TextInput::make('link_url')
