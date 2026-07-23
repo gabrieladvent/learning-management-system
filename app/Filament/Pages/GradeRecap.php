@@ -3,14 +3,9 @@
 namespace App\Filament\Pages;
 
 use App\Exports\GradeRecapExport;
-use App\Models\Assignment;
-use App\Models\AssignmentSubmission;
 use App\Models\ClassroomSubject;
-use App\Models\Enums\ExamModeEnum;
-use App\Models\Exam;
-use App\Models\ExamSession;
-use App\Models\ExamSubmission;
 use App\Models\Student;
+use App\Support\GradeBook;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -47,19 +42,10 @@ class GradeRecap extends Page implements HasForms, HasTable
     public ?string $classroomSubjectId = null;
 
     /**
-     * Cache nilai per request supaya tidak query ulang per cell.
-     *
-     * @var array<string, array<string, float|null>>|null
+     * Buku nilai course terpilih (kolom + siswa + matriks), memoized per request.
+     * Logika agregasi dipindah ke App\Support\GradeBook (testable, reusable).
      */
-    private ?array $gradeMatrixCache = null;
-
-    /**
-     * Cache daftar kolom dinamis (assignment + exam) per request.
-     * Dipanggil banyak kali (Total column closure per baris siswa) — tanpa cache jadi N+1.
-     *
-     * @var array<int, array<string, mixed>>|null
-     */
-    private ?array $dynamicColumnsCache = null;
+    private ?GradeBook $gradeBook = null;
 
     public function mount(): void
     {
@@ -68,9 +54,19 @@ class GradeRecap extends Page implements HasForms, HasTable
 
     public function updatedClassroomSubjectId(): void
     {
-        $this->gradeMatrixCache = null;
-        $this->dynamicColumnsCache = null;
+        $this->gradeBook = null;
         $this->resetTable();
+    }
+
+    private function gradeBook(): ?GradeBook
+    {
+        if ($this->gradeBook !== null) {
+            return $this->gradeBook;
+        }
+
+        $course = $this->getCourse();
+
+        return $course ? ($this->gradeBook = new GradeBook($course)) : null;
     }
 
     public function form(Form $form): Form
@@ -240,61 +236,17 @@ class GradeRecap extends Page implements HasForms, HasTable
 
     private function gradeFor(string $studentId, string $columnKey): ?float
     {
-        $this->gradeMatrixCache ??= $this->computeGradeMatrix();
-
-        return $this->gradeMatrixCache[$studentId][$columnKey] ?? null;
+        return $this->gradeBook()?->matrix()[$studentId][$columnKey] ?? null;
     }
 
     /**
-     * Daftar kolom dinamis: tiap kolom satu assignment / exam.
-     * Cached per request supaya Total column closure tidak trigger query ulang per baris siswa.
+     * Daftar kolom dinamis (assignment + exam) untuk course terpilih.
      *
      * @return array<int, array{key: string, type: 'assignment'|'exam_quiz'|'exam_submission', id: string, label: string, max_score: float}>
      */
     public function getDynamicColumns(): array
     {
-        if ($this->dynamicColumnsCache !== null) {
-            return $this->dynamicColumnsCache;
-        }
-
-        $course = $this->getCourse();
-        if (! $course) {
-            return $this->dynamicColumnsCache = [];
-        }
-
-        $columns = [];
-
-        $assignments = Assignment::query()
-            ->whereHas('material', fn ($q) => $q->where('classroom_subject_id', $course->id))
-            ->orderBy('deadline')
-            ->get(['id', 'title', 'max_score']);
-
-        foreach ($assignments as $a) {
-            $columns[] = [
-                'key' => 'a_'.$a->id,
-                'type' => 'assignment',
-                'id' => $a->id,
-                'label' => $a->title,
-                'max_score' => (float) $a->max_score,
-            ];
-        }
-
-        $exams = Exam::query()
-            ->whereHas('material', fn ($q) => $q->where('classroom_subject_id', $course->id))
-            ->orderBy('starts_at')
-            ->get(['id', 'title', 'max_score', 'mode']);
-
-        foreach ($exams as $e) {
-            $columns[] = [
-                'key' => 'e_'.$e->id,
-                'type' => $e->mode === ExamModeEnum::OnlineQuiz ? 'exam_quiz' : 'exam_submission',
-                'id' => $e->id,
-                'label' => $e->title,
-                'max_score' => (float) $e->max_score,
-            ];
-        }
-
-        return $this->dynamicColumnsCache = $columns;
+        return $this->gradeBook()?->columns() ?? [];
     }
 
     /**
@@ -304,15 +256,7 @@ class GradeRecap extends Page implements HasForms, HasTable
      */
     public function getAllStudents(): Collection
     {
-        $course = $this->getCourse();
-        if (! $course) {
-            return collect();
-        }
-
-        return Student::query()
-            ->whereHas('classrooms', fn ($q) => $q->whereKey($course->classroom_id))
-            ->orderBy('full_name')
-            ->get();
+        return $this->gradeBook()?->students() ?? collect();
     }
 
     /**
@@ -322,60 +266,7 @@ class GradeRecap extends Page implements HasForms, HasTable
      */
     private function computeGradeMatrix(): array
     {
-        $course = $this->getCourse();
-        if (! $course) {
-            return [];
-        }
-
-        $studentIds = $this->getAllStudents()->pluck('id');
-        $columns = $this->getDynamicColumns();
-
-        $matrix = [];
-
-        foreach ($studentIds as $studentId) {
-            $matrix[$studentId] = [];
-            foreach ($columns as $col) {
-                $matrix[$studentId][$col['key']] = null;
-            }
-        }
-
-        $assignmentIds = collect($columns)->where('type', 'assignment')->pluck('id');
-        if ($assignmentIds->isNotEmpty()) {
-            AssignmentSubmission::query()
-                ->whereIn('assignment_id', $assignmentIds)
-                ->whereIn('student_id', $studentIds)
-                ->get(['assignment_id', 'student_id', 'score'])
-                ->each(function ($s) use (&$matrix) {
-                    $matrix[$s->student_id]['a_'.$s->assignment_id] = $s->score !== null ? (float) $s->score : null;
-                });
-        }
-
-        $quizExamIds = collect($columns)->where('type', 'exam_quiz')->pluck('id');
-        if ($quizExamIds->isNotEmpty()) {
-            ExamSession::query()
-                ->whereIn('exam_id', $quizExamIds)
-                ->whereIn('student_id', $studentIds)
-                ->get(['exam_id', 'student_id', 'total_score', 'submitted_at'])
-                ->each(function ($s) use (&$matrix) {
-                    if (! $s->submitted_at) {
-                        return;
-                    }
-                    $matrix[$s->student_id]['e_'.$s->exam_id] = $s->total_score !== null ? (float) $s->total_score : null;
-                });
-        }
-
-        $submissionExamIds = collect($columns)->where('type', 'exam_submission')->pluck('id');
-        if ($submissionExamIds->isNotEmpty()) {
-            ExamSubmission::query()
-                ->whereIn('exam_id', $submissionExamIds)
-                ->whereIn('student_id', $studentIds)
-                ->get(['exam_id', 'student_id', 'score'])
-                ->each(function ($s) use (&$matrix) {
-                    $matrix[$s->student_id]['e_'.$s->exam_id] = $s->score !== null ? (float) $s->score : null;
-                });
-        }
-
-        return $matrix;
+        return $this->gradeBook()?->matrix() ?? [];
     }
 
     /**

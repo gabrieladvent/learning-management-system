@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Models\Enums\ExamModeEnum;
 use App\Models\Exam;
 use App\Models\ExamSubmission;
 use App\Models\Student;
@@ -30,7 +31,7 @@ class ExamExport implements FromArray, ShouldAutoSize, WithEvents, WithTitle
         ]);
 
         $students = $exam->material?->classroomSubject?->classroom?->students ?? collect();
-        $isSubmission = $exam->mode?->value === 'submission';
+        $isSubmission = $exam->mode === ExamModeEnum::Submission;
 
         $rows = [];
 

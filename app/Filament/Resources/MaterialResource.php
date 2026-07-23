@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\ScopesToCurrentTeacher;
 use App\Filament\Resources\MaterialResource\Pages;
 use App\Filament\Resources\MaterialResource\RelationManagers;
 use App\Models\ClassroomSubject;
@@ -32,6 +33,8 @@ use Illuminate\Support\HtmlString;
 
 class MaterialResource extends Resource
 {
+    use ScopesToCurrentTeacher;
+
     protected static ?string $model = Material::class;
 
     protected static bool $shouldRegisterNavigation = false;
@@ -42,20 +45,10 @@ class MaterialResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()
-            ->with(['classroomSubject.classroom', 'classroomSubject.subject']);
-
-        $user = auth()->user();
-
-        if ($user?->hasRole('super_admin')) {
-            return $query;
-        }
-
-        if ($user?->teacher) {
-            return $query->whereHas('classroomSubject', fn ($q) => $q->where('teacher_id', $user->teacher->id));
-        }
-
-        return $query->whereRaw('1 = 0');
+        return static::scopeToCurrentTeacher(
+            parent::getEloquentQuery()->with(['classroomSubject.classroom', 'classroomSubject.subject']),
+            'classroomSubject',
+        );
     }
 
     public static function form(Form $form): Form

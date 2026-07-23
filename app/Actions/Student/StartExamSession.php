@@ -2,6 +2,7 @@
 
 namespace App\Actions\Student;
 
+use App\Models\Enums\ExamModeEnum;
 use App\Models\Exam;
 use App\Models\ExamSession;
 use App\Models\Material;
@@ -29,7 +30,7 @@ class StartExamSession
         $material = $this->resolveMaterial($student, $materialId);
         $exam = $this->resolveExam($material, $examId);
 
-        if ($exam->mode->value !== 'online_quiz') {
+        if ($exam->mode !== ExamModeEnum::OnlineQuiz) {
             throw ValidationException::withMessages([
                 'mode' => 'Ujian ini bukan kuis online — tidak perlu memulai session.',
             ]);

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Enums\QuestionTypeEnum;
 use App\Models\ExamAnswer;
 use App\Models\ExamQuestion;
 use App\Models\ExamSession;
@@ -59,10 +60,9 @@ class ExamGrader
 
     private function scoreFor(ExamQuestion $question, ?string $answer): ?float
     {
-        $type = $question->type->value;
         $full = (float) $question->score;
 
-        if ($type === 'essay') {
+        if ($question->type === QuestionTypeEnum::Essay) {
             return null;
         }
 
@@ -72,7 +72,7 @@ class ExamGrader
 
         $correct = (string) ($question->correct_answer ?? '');
 
-        if ($type === 'multiple_choice') {
+        if ($question->type === QuestionTypeEnum::MultipleChoice) {
             return $answer === $correct ? $full : 0.0;
         }
 

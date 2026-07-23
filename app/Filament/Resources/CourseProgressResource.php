@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\ScopesToCurrentTeacher;
 use App\Filament\Resources\CourseProgressResource\Pages;
 use App\Models\Classroom;
 use App\Models\ClassroomSubject;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\DB;
 
 class CourseProgressResource extends Resource
 {
+    use ScopesToCurrentTeacher;
+
     protected static ?string $model = ClassroomSubject::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
@@ -45,18 +48,9 @@ class CourseProgressResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->with(['classroom', 'subject', 'teacher']);
-
-        $user = auth()->user();
-        if ($user?->hasRole('super_admin')) {
-            return $query;
-        }
-
-        if ($user?->teacher) {
-            return $query->where('teacher_id', $user->teacher->id);
-        }
-
-        return $query->whereRaw('1 = 0');
+        return static::scopeToCurrentTeacher(
+            parent::getEloquentQuery()->with(['classroom', 'subject', 'teacher'])
+        );
     }
 
     public static function table(Table $table): Table

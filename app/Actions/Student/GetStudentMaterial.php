@@ -4,6 +4,7 @@ namespace App\Actions\Student;
 
 use App\Models\Assignment;
 use App\Models\ClassroomSubject;
+use App\Models\Enums\ExamModeEnum;
 use App\Models\Exam;
 use App\Models\ExamSession;
 use App\Models\Student;
@@ -163,7 +164,7 @@ class GetStudentMaterial
         $totalScore = null;
         $submittedAt = null;
 
-        if ($mode === 'online_quiz') {
+        if ($exam->mode === ExamModeEnum::OnlineQuiz) {
             if ($session) {
                 if ($session->submitted_at) {
                     $status = $session->total_score !== null && $exam->questions_count > 0 && $this->isFullyGraded($session)
