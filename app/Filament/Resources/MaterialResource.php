@@ -51,19 +51,32 @@ class MaterialResource extends Resource
         );
     }
 
+    /**
+     * Opsi select course untuk form — WAJIB ter-scope ke guru yang login.
+     * Tanpa ini, guru bisa menempelkan materi ke course milik guru lain (IDOR),
+     * karena getEloquentQuery hanya menyaring LIST, bukan pilihan di form.
+     *
+     * @return array<string, string>
+     */
+    public static function classroomSubjectOptions(): array
+    {
+        return static::scopeToCurrentTeacher(
+            ClassroomSubject::query()->with(['classroom', 'subject'])
+        )
+            ->get()
+            ->mapWithKeys(fn (ClassroomSubject $cs) => [
+                $cs->id => "{$cs->classroom->name} — {$cs->subject->name} (Sem {$cs->semester})",
+            ])
+            ->toArray();
+    }
+
     public static function form(Form $form): Form
     {
         return $form->schema([
             Section::make('Informasi Materi')->schema([
                 Select::make('classroom_subject_id')
                     ->label('Kelas & Mata Pelajaran')
-                    ->options(
-                        fn () => ClassroomSubject::with(['classroom', 'subject'])
-                            ->get()
-                            ->mapWithKeys(fn ($cs) => [
-                                $cs->id => "{$cs->classroom->name} — {$cs->subject->name} (Sem {$cs->semester})",
-                            ])
-                    )
+                    ->options(fn () => static::classroomSubjectOptions())
                     ->required()
                     ->searchable()
                     ->columnSpanFull(),
