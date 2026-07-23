@@ -66,6 +66,19 @@ class TeacherScopingTest extends TestCase
         $this->assertSame([$this->a['cs']->id], CourseProgressResource::getEloquentQuery()->pluck('id')->all());
     }
 
+    public function test_material_form_course_options_are_scoped_to_teacher(): void
+    {
+        // M17: opsi select course di FORM materi harus hanya milik guru yang login,
+        // bukan cuma LIST yang ter-scope. Kalau bocor → guru bisa menempelkan materi
+        // ke course guru lain.
+        $this->actingAs($this->a['teacher']->user);
+
+        $options = MaterialResource::classroomSubjectOptions();
+
+        $this->assertSame([$this->a['cs']->id], array_keys($options));
+        $this->assertArrayNotHasKey($this->b['cs']->id, $options);
+    }
+
     public function test_super_admin_sees_all_records(): void
     {
         $admin = User::create([
