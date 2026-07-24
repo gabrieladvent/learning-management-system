@@ -64,6 +64,34 @@ if [ -f .env ] && grep -q '^APP_ENV=production' .env; then ok "APP_ENV=productio
 if [ -f .env ] && grep -q '^APP_DEBUG=false' .env; then ok "APP_DEBUG=false"; else err "APP_DEBUG bukan false — WAJIB false di production (kebocoran info)"; fail=1; fi
 if [ -f .env ] && grep -q '^MEDIA_DISK=public' .env; then err "MEDIA_DISK=public — file bisa diunduh tanpa auth. Set MEDIA_DISK=local"; fail=1; fi
 
+# ── Cek Redis (M2) ────────────────────────────────────────────────────────────
+# Kalau ada driver yang di-set ke redis, pastikan Redis BENAR-BENAR reachable via
+# koneksi terkonfigurasi (host/port/password/phpredis dari .env). Kalau tidak,
+# session/cache/queue akan gagal senyap saat runtime — lebih baik gagal di sini.
+if [ -f .env ]; then
+  redis_used=0
+  for k in SESSION_DRIVER QUEUE_CONNECTION CACHE_STORE; do
+    grep -qE "^${k}=redis([[:space:]]|\$)" .env && redis_used=1
+  done
+
+  if [ "$redis_used" = "1" ]; then
+    ping="$("$PHP" artisan tinker --execute="try { Illuminate\Support\Facades\Redis::connection()->ping(); echo 'REDIS_OK'; } catch (\Throwable \$e) { echo 'REDIS_FAIL'; }" 2>/dev/null || true)"
+    if printf '%s' "$ping" | grep -q REDIS_OK; then
+      ok "Redis reachable (dipakai untuk session/cache/queue)"
+    else
+      err "Driver 'redis' dipakai di .env tapi Redis TIDAK reachable — cek 'redis-cli ping', ekstensi phpredis, & REDIS_HOST/PORT/PASSWORD"
+      fail=1
+    fi
+
+    # Gotcha umum: QUEUE_CONNECTION=redis tapi worker supervisor masih
+    # 'queue:work database' → job masuk Redis, worker kuras DB kosong.
+    if grep -qE "^QUEUE_CONNECTION=redis([[:space:]]|\$)" .env; then
+      wconf="$(grep -lR 'queue:work database' /etc/supervisor/conf.d/ 2>/dev/null | head -1 || true)"
+      [ -n "$wconf" ] && warn "QUEUE_CONNECTION=redis tapi supervisor masih 'queue:work database' di ${wconf} — ganti ke 'queue:work redis' atau job Redis tidak akan diproses"
+    fi
+  fi
+fi
+
 if [ "$fail" = "1" ]; then err "Pengecekan lingkungan gagal. Perbaiki dulu hal di atas."; exit 1; fi
 
 # ── Mode --check: diagnosa saja, stop di sini ─────────────────────────────────
