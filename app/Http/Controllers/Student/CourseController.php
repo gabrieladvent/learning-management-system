@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Student;
 
 use App\Actions\Student\GetStudentCourse;
+use App\Actions\Student\SetCoursePin;
 use App\Http\Controllers\Controller;
 use App\Models\Student;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class CourseController extends Controller
 {
@@ -21,39 +21,23 @@ class CourseController extends Controller
         return Inertia::render('Course/CourseDetail', $action->handle($student, $course));
     }
 
-    public function pin(string $course): RedirectResponse
-    {
-        $student = $this->studentWithCourseGuard($course);
-
-        $student->pinnedClassroomSubjects()->syncWithoutDetaching([
-            $course => ['pinned_at' => now()],
-        ]);
-
-        return back();
-    }
-
-    public function unpin(string $course): RedirectResponse
-    {
-        $student = $this->studentWithCourseGuard($course);
-
-        $student->pinnedClassroomSubjects()->detach($course);
-
-        return back();
-    }
-
-    private function studentWithCourseGuard(string $course): Student
+    public function pin(string $course, SetCoursePin $action): RedirectResponse
     {
         /** @var Student $student */
         $student = Auth::guard('student')->user();
 
-        $belongs = $student->classrooms()
-            ->whereHas('classroomSubjects', fn ($q) => $q->whereKey($course))
-            ->exists();
+        $action->handle($student, $course, pinned: true);
 
-        if (! $belongs) {
-            throw new NotFoundHttpException('Mata pelajaran tidak ditemukan.');
-        }
+        return back();
+    }
 
-        return $student;
+    public function unpin(string $course, SetCoursePin $action): RedirectResponse
+    {
+        /** @var Student $student */
+        $student = Auth::guard('student')->user();
+
+        $action->handle($student, $course, pinned: false);
+
+        return back();
     }
 }
