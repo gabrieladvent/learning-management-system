@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Student;
 
 use App\Actions\Student\GetStudentAssignment;
+use App\Actions\Student\ResolveVisibleAssignment;
 use App\Actions\Student\SubmitStudentAssignment;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Student\Concerns\ServesGuardedMedia;
-use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use App\Models\Student;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -67,9 +66,13 @@ class AssignmentController extends Controller
      * Download lampiran tugas (file dari guru). Otorisasi: siswa terdaftar di
      * kelas + tugas published & dalam window ketersediaan.
      */
-    public function downloadAttachment(string $material, string $assignment, string $media): BinaryFileResponse
-    {
-        $assignmentModel = $this->resolveVisibleAssignment($this->student(), $material, $assignment);
+    public function downloadAttachment(
+        string $material,
+        string $assignment,
+        string $media,
+        ResolveVisibleAssignment $resolve,
+    ): BinaryFileResponse {
+        $assignmentModel = $resolve->handle($this->student(), $material, $assignment);
 
         return $this->streamMediaFromCollection($assignmentModel, 'assignment_attachments', $media);
     }
@@ -91,27 +94,6 @@ class AssignmentController extends Controller
         }
 
         return $this->streamMediaFromCollection($submission, 'submission_files', $media);
-    }
-
-    private function resolveVisibleAssignment(Student $student, string $materialId, string $assignmentId): Assignment
-    {
-        $assignment = Assignment::query()
-            ->whereKey($assignmentId)
-            ->where('is_published', true)
-            ->where(fn (Builder $q) => $q->whereNull('available_from')->orWhere('available_from', '<=', now()))
-            ->where(fn (Builder $q) => $q->whereNull('available_until')->orWhere('available_until', '>=', now()))
-            ->whereHas('material', function (Builder $q) use ($materialId, $student) {
-                $q->whereKey($materialId)
-                    ->where('is_published', true)
-                    ->whereHas('classroomSubject.classroom.students', fn (Builder $s) => $s->whereKey($student->id));
-            })
-            ->first();
-
-        if (! $assignment) {
-            throw new NotFoundHttpException('Tugas tidak ditemukan atau belum tersedia.');
-        }
-
-        return $assignment;
     }
 
     private function student(): Student

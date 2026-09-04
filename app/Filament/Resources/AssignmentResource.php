@@ -70,6 +70,11 @@ class AssignmentResource extends Resource
                     ->required()
                     ->native(false),
 
+                Toggle::make('accepts_late_submission')
+                    ->label('Terima Pengumpulan Terlambat')
+                    ->default(true)
+                    ->helperText('Siswa tetap bisa mengumpulkan setelah batas waktu, dan pengumpulannya ditandai "Terlambat". Kalau dimatikan, pengumpulan ditolak begitu batas waktu lewat.'),
+
                 TextInput::make('max_score')
                     ->label('Nilai Maksimal')
                     ->numeric()
