@@ -66,6 +66,7 @@ class BuildStudentTodoList
                 'available_until' => null,
                 'is_today' => $isToday,
                 'is_within_week' => $isWithinWeek,
+                'material_id' => $material?->id,
                 'url' => $material
                     ? route('student.assignments.show', [
                         'material' => $material->id,
@@ -123,6 +124,7 @@ class BuildStudentTodoList
                 'available_until' => $exam->available_until?->toIso8601String(),
                 'is_today' => $isToday,
                 'is_within_week' => $isWithinWeek,
+                'material_id' => $material?->id,
                 'url' => $material
                     ? route('student.exams.show', [
                         'material' => $material->id,

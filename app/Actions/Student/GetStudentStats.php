@@ -78,6 +78,7 @@ class GetStudentStats
                 'subject_name' => $upcomingExam->material?->classroomSubject?->subject?->name,
                 'starts_at' => $upcomingExam->starts_at?->toIso8601String(),
                 'duration_minutes' => $upcomingExam->duration_minutes,
+                'material_id' => $upcomingExam->material?->id,
                 'url' => $upcomingExam->material
                     ? route('student.exams.show', [
                         'material' => $upcomingExam->material->id,
