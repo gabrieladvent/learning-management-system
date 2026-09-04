@@ -48,6 +48,14 @@ return [
             'driver' => 'session',
             'provider' => 'students',
         ],
+
+        // Guard khusus aplikasi mobile: token Sanctum, TANPA sesi/cookie.
+        // Dipisah dari guard `student` supaya perubahan pada jalur web tidak
+        // ikut mengubah perilaku API, dan sebaliknya.
+        'student-api' => [
+            'driver' => 'sanctum',
+            'provider' => 'students',
+        ],
     ],
 
     /*
