@@ -27,8 +27,16 @@ class AppServiceProvider extends ServiceProvider
         // Default activitylog resolver hanya cek guard `web`. Sistem ini punya guard
         // `student` (NIS + birth_date) yang tidak overlap dengan web → kita resolve
         // dari guard mana pun yang sedang authenticated.
+        //
+        // `student-api` (token Sanctum, aplikasi mobile) WAJIB ikut di sini.
+        // Tanpa itu, activity dari aplikasi tercatat tanpa causer — dan karena
+        // `material_download` dipakai sebagai proxy completion (docs/11 §7.1),
+        // progres belajar siswa yang memakai aplikasi akan hilang dari laporan
+        // guru tanpa error apa pun.
         app(CauserResolver::class)->resolveUsing(
-            fn () => Auth::guard('web')->user() ?? Auth::guard('student')->user()
+            fn () => Auth::guard('web')->user()
+                ?? Auth::guard('student')->user()
+                ?? Auth::guard('student-api')->user()
         );
     }
 }
