@@ -56,6 +56,11 @@ class AssignmentsRelationManager extends RelationManager
                     ->required()
                     ->native(false),
 
+                Toggle::make('accepts_late_submission')
+                    ->label('Terima Pengumpulan Terlambat')
+                    ->default(true)
+                    ->helperText('Siswa tetap bisa mengumpulkan setelah batas waktu, dan ditandai "Terlambat".'),
+
                 TextInput::make('max_score')
                     ->label('Nilai Maksimal')
                     ->numeric()

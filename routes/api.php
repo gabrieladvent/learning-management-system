@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Student\AssignmentController;
 use App\Http\Controllers\Api\V1\Student\AuthController;
 use App\Http\Controllers\Api\V1\Student\CourseController;
 use App\Http\Controllers\Api\V1\Student\DashboardController;
 use App\Http\Controllers\Api\V1\Student\MaterialController;
 use App\Http\Middleware\Api\EnsureStudentActiveApi;
 use App\Http\Middleware\Api\EnsureStudentPasswordChangedApi;
+use App\Http\Middleware\Api\IdempotentRequest;
 use App\Http\Middleware\Api\RefreshTokenExpiry;
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +42,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('courses/{course}', [MaterialController::class, 'course'])->name('courses.show');
             Route::get('courses/{course}/materials/{material}', [MaterialController::class, 'show'])->name('materials.show');
             Route::get('materials/{material}/files/{media}/download', [MaterialController::class, 'download'])->name('materials.files.download');
+
+            // Tugas
+            Route::get('materials/{material}/assignments/{assignment}', [AssignmentController::class, 'show'])
+                ->name('assignments.show');
+            Route::post('materials/{material}/assignments/{assignment}/submit', [AssignmentController::class, 'submit'])
+                ->middleware(IdempotentRequest::class)
+                ->name('assignments.submit');
+            Route::get('materials/{material}/assignments/{assignment}/attachments/{media}/download', [AssignmentController::class, 'downloadAttachment'])
+                ->name('assignments.attachments.download');
+            Route::get('materials/{material}/assignments/{assignment}/submission-files/{media}/download', [AssignmentController::class, 'downloadSubmissionFile'])
+                ->name('assignments.submission-files.download');
         });
     });
 });

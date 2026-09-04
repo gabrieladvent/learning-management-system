@@ -23,7 +23,8 @@ class SubmitStudentAssignment
      * - size <= assignment.max_file_size_mb (MB)
      *
      * Aturan lain:
-     * - Tidak boleh setelah deadline
+     * - Setelah deadline: ditolak kalau `accepts_late_submission` false,
+     *   diterima dan ditandai `is_late` kalau true
      * - Siswa harus enrolled di classroom course
      * - Material & Assignment harus visible (is_published + range available)
      *
@@ -42,7 +43,9 @@ class SubmitStudentAssignment
         $material = $this->resolveMaterial($student, $materialId);
         $assignment = $this->resolveAssignment($material, $assignmentId);
 
-        if ($assignment->deadline && now()->greaterThan($assignment->deadline)) {
+        $isLate = $assignment->deadline !== null && now()->greaterThan($assignment->deadline);
+
+        if ($isLate && ! $assignment->accepts_late_submission) {
             throw ValidationException::withMessages([
                 'deadline' => 'Tugas sudah melewati deadline, tidak bisa dikumpulkan lagi.',
             ]);
@@ -50,7 +53,7 @@ class SubmitStudentAssignment
 
         $this->validateFiles($assignment, $newFiles);
 
-        [$submission, $isResubmit] = DB::transaction(function () use ($assignment, $student, $content, $linkUrl, $newFiles, $removedFileIds) {
+        [$submission, $isResubmit] = DB::transaction(function () use ($assignment, $student, $content, $linkUrl, $newFiles, $removedFileIds, $isLate) {
             // withTrashed: unique(assignment_id, student_id) tidak respect soft-delete di DB level.
             // Tanpa ini, submission yang pernah dihapus admin → siswa tidak bisa submit lagi (1062).
             $submission = AssignmentSubmission::withTrashed()
@@ -77,7 +80,11 @@ class SubmitStudentAssignment
             $submission->content = $content;
             $submission->link_url = $linkUrl;
             $submission->submitted_at = now();
-            $submission->is_late = false;
+            // `is_late` mengikuti `submitted_at`, dan keduanya ditimpa setiap
+            // kali siswa menyunting. Jadi pengumpulan tepat waktu yang disunting
+            // setelah deadline akan menjadi terlambat — konsisten, karena
+            // waktu yang tercatat memang waktu penyuntingan terakhir.
+            $submission->is_late = $isLate;
             $submission->save();
 
             if ($removedFileIds !== []) {

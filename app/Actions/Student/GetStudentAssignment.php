@@ -96,6 +96,9 @@ class GetStudentAssignment
                 'title' => $assignment->title,
                 'description' => $assignment->description,
                 'deadline' => $assignment->deadline?->toIso8601String(),
+                // Klien memakai ini untuk membedakan "lewat deadline tapi masih
+                // bisa dikumpulkan (akan ditandai terlambat)" dari "sudah ditutup".
+                'accepts_late_submission' => (bool) $assignment->accepts_late_submission,
                 'max_score' => $assignment->max_score !== null ? (float) $assignment->max_score : null,
                 'allowed_file_types' => $assignment->allowed_file_types ?? Assignment::DEFAULT_FILE_TYPES,
                 'max_file_size_mb' => $assignment->max_file_size_mb ?? 10,
@@ -218,6 +221,7 @@ class GetStudentAssignment
             'content' => $submission->content,
             'link_url' => $submission->link_url,
             'submitted_at' => $submission->submitted_at?->toIso8601String(),
+            'is_late' => (bool) $submission->is_late,
             'score' => $submission->score !== null ? (float) $submission->score : null,
             'feedback' => $submission->feedback,
             'files' => $files,

@@ -29,6 +29,7 @@ class Assignment extends Model implements HasMedia
         'title',
         'description',
         'deadline',
+        'accepts_late_submission',
         'max_score',
         'order',
         'allowed_file_types',
@@ -38,10 +39,23 @@ class Assignment extends Model implements HasMedia
         'is_published',
     ];
 
+    /**
+     * Default level-model, bukan cuma level DB.
+     *
+     * Tanpa ini, Assignment::create() mengembalikan instance yang atributnya
+     * masih null sampai di-refresh — dan `(bool) null` jadi `false`, sehingga
+     * tugas yang baru dibuat bisa dilaporkan "menolak keterlambatan" padahal
+     * di database nilainya true.
+     */
+    protected $attributes = [
+        'accepts_late_submission' => true,
+    ];
+
     protected function casts(): array
     {
         return [
             'deadline' => 'datetime',
+            'accepts_late_submission' => 'boolean',
             'max_score' => 'decimal:2',
             'order' => 'integer',
             'allowed_file_types' => 'array',

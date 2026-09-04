@@ -138,7 +138,11 @@ class GetStudentMaterial
             'max_score' => $assignment->max_score !== null ? (float) $assignment->max_score : null,
             'status' => $status,
             'is_overdue' => (bool) $isOverdue,
+            // Tanpa ini, status 'overdue' di kartu menyesatkan: siswa mengira
+            // tugasnya tertutup padahal masih bisa dikumpulkan.
+            'accepts_late_submission' => (bool) $assignment->accepts_late_submission,
             'submitted_at' => $submission?->submitted_at?->toIso8601String(),
+            'is_late' => (bool) ($submission?->is_late ?? false),
             'score' => $submission && $submission->score !== null ? (float) $submission->score : null,
         ];
     }
