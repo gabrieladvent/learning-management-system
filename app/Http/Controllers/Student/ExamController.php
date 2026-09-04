@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Student;
 
 use App\Actions\Student\GetStudentExam;
 use App\Actions\Student\GetStudentExamSession;
+use App\Actions\Student\ResolveStudentExamQuestionFile;
 use App\Actions\Student\SaveExamAnswer;
 use App\Actions\Student\StartExamSession;
 use App\Actions\Student\SubmitExamSession;
 use App\Actions\Student\SubmitExamSubmission;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Student\Concerns\ServesGuardedMedia;
-use App\Models\ExamSession;
 use App\Models\ExamSubmission;
 use App\Models\Student;
 use Illuminate\Http\JsonResponse;
@@ -160,28 +160,12 @@ class ExamController extends Controller
      * Download file lampiran soal ujian. Otorisasi lewat kepemilikan session:
      * siswa hanya bisa mengunduh file soal dari session ujian miliknya sendiri.
      */
-    public function downloadQuestionFile(string $session, string $media): BinaryFileResponse
-    {
-        $student = $this->student();
-
-        $examSession = ExamSession::query()
-            ->whereKey($session)
-            ->where('student_id', $student->id)
-            ->with('exam.questions')
-            ->first();
-
-        if (! $examSession || ! $examSession->exam) {
-            throw new NotFoundHttpException('Session ujian tidak ditemukan.');
-        }
-
-        $question = $examSession->exam->questions->first(
-            fn ($q) => $q->getMedia('question_files')
-                ->contains(fn ($m) => (string) $m->id === $media || $m->uuid === $media)
-        );
-
-        if (! $question) {
-            throw new NotFoundHttpException('File tidak ditemukan.');
-        }
+    public function downloadQuestionFile(
+        string $session,
+        string $media,
+        ResolveStudentExamQuestionFile $resolve,
+    ): BinaryFileResponse {
+        $question = $resolve->handle($this->student(), $session, $media);
 
         return $this->streamMediaFromCollection($question, 'question_files', $media);
     }

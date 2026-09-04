@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\Student\AssignmentController;
 use App\Http\Controllers\Api\V1\Student\AuthController;
 use App\Http\Controllers\Api\V1\Student\CourseController;
 use App\Http\Controllers\Api\V1\Student\DashboardController;
+use App\Http\Controllers\Api\V1\Student\ExamController;
 use App\Http\Controllers\Api\V1\Student\MaterialController;
 use App\Http\Middleware\Api\EnsureStudentActiveApi;
 use App\Http\Middleware\Api\EnsureStudentPasswordChangedApi;
@@ -53,6 +54,32 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 ->name('assignments.attachments.download');
             Route::get('materials/{material}/assignments/{assignment}/submission-files/{media}/download', [AssignmentController::class, 'downloadSubmissionFile'])
                 ->name('assignments.submission-files.download');
+
+            // Ujian
+            Route::get('materials/{material}/exams/{exam}', [ExamController::class, 'show'])
+                ->name('exams.show');
+            Route::post('materials/{material}/exams/{exam}/start', [ExamController::class, 'start'])
+                ->name('exams.start');
+            Route::post('materials/{material}/exams/{exam}/submit-submission', [ExamController::class, 'submitSubmission'])
+                ->middleware(IdempotentRequest::class)
+                ->name('exams.submission.submit');
+            Route::get('materials/{material}/exams/{exam}/submission-files/{media}/download', [ExamController::class, 'downloadSubmissionFile'])
+                ->name('exams.submission-files.download');
+
+            Route::get('exams/sessions/{session}', [ExamController::class, 'session'])
+                ->name('exams.session');
+            Route::post('exams/sessions/{session}/submit', [ExamController::class, 'submit'])
+                ->name('exams.submit');
+            Route::get('exams/sessions/{session}/result', [ExamController::class, 'result'])
+                ->name('exams.result');
+            Route::get('exams/sessions/{session}/questions/{media}/download', [ExamController::class, 'downloadQuestionFile'])
+                ->name('exams.questions.download');
+
+            // Auto-save jawaban: throttle lebih longgar karena bisa memicu tiap
+            // beberapa detik selama ujian berlangsung.
+            Route::post('exams/sessions/{session}/answer', [ExamController::class, 'answer'])
+                ->middleware('throttle:120,1')
+                ->name('exams.answer');
         });
     });
 });
