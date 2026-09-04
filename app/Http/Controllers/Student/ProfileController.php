@@ -34,7 +34,12 @@ class ProfileController extends Controller
 
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
-            'password' => ['required', 'confirmed', Password::defaults()],
+            // `different` menutup celah: tanpa ini siswa bisa "mengganti"
+            // password ke tanggal lahirnya sendiri. Kolom password_changed_at
+            // ikut terisi, EnsureStudentPasswordChanged melepasnya, tapi
+            // passwordnya tetap semudah semula. Aturan yang sama dipakai di
+            // jalur API (Api\V1\Student\ProfileController).
+            'password' => ['required', 'confirmed', 'different:current_password', Password::defaults()],
         ]);
 
         if ($user === null || ! Hash::check($validated['current_password'], $user->password)) {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Student\CourseController;
 use App\Http\Controllers\Api\V1\Student\DashboardController;
 use App\Http\Controllers\Api\V1\Student\ExamController;
 use App\Http\Controllers\Api\V1\Student\MaterialController;
+use App\Http\Controllers\Api\V1\Student\ProfileController;
 use App\Http\Middleware\Api\EnsureStudentActiveApi;
 use App\Http\Middleware\Api\EnsureStudentPasswordChangedApi;
 use App\Http\Middleware\Api\IdempotentRequest;
@@ -24,6 +25,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get(
+    'warmhole',
+    fn() => response()->json(
+        ['status' => 'ok']
+    )
+);
+
 Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::post('auth/login', [AuthController::class, 'login'])
         ->middleware('throttle:20,1')
@@ -32,6 +40,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
     Route::middleware(['auth:student-api', EnsureStudentActiveApi::class, RefreshTokenExpiry::class])->group(function () {
         Route::post('auth/logout', [AuthController::class, 'logout'])->name('auth.logout');
         Route::get('auth/me', [AuthController::class, 'me'])->name('auth.me');
+
+        Route::patch('profile/password', [ProfileController::class, 'updatePassword'])
+            ->name('profile.password');
 
         Route::middleware(EnsureStudentPasswordChangedApi::class)->group(function () {
             Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -75,8 +86,6 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::get('exams/sessions/{session}/questions/{media}/download', [ExamController::class, 'downloadQuestionFile'])
                 ->name('exams.questions.download');
 
-            // Auto-save jawaban: throttle lebih longgar karena bisa memicu tiap
-            // beberapa detik selama ujian berlangsung.
             Route::post('exams/sessions/{session}/answer', [ExamController::class, 'answer'])
                 ->middleware('throttle:120,1')
                 ->name('exams.answer');
