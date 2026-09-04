@@ -188,12 +188,22 @@ class AuthApiTest extends TestCase
             ])->assertStatus(422);
         }
 
-        $this->postJson('/api/v1/auth/login', [
+        // Password BENAR pun ditolak selama masih ter-throttle.
+        $response = $this->postJson('/api/v1/auth/login', [
             'nisn' => '1234567890', 'password' => '2008-05-10',
-        ])
-            ->assertStatus(422)
-            ->assertJsonPath('response_code', 'validation_failed')
-            ->assertJsonFragment(['response_message' => 'Terlalu banyak percobaan login. Coba lagi dalam 60 detik.']);
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonPath('response_code', 'validation_failed');
+
+        // Sisa detiknya SENGAJA tidak diassert persis: RateLimiter::availableIn()
+        // menghitung mundur dari jam dinding, jadi nilainya 60 atau 59 tergantung
+        // sepersekian detik test berjalan. Yang diuji di sini adalah "ditolak
+        // karena throttle", bukan angkanya.
+        $this->assertStringContainsString(
+            'Terlalu banyak percobaan login',
+            (string) $response->json('response_message'),
+        );
     }
 
     public function test_missing_fields_return_validation_envelope(): void
