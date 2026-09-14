@@ -6,6 +6,7 @@ use App\Models\ClassroomSubject;
 use App\Models\Material;
 use App\Models\Student;
 use App\Models\User;
+use App\Support\StudentQuotes;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 use Tests\Concerns\CreatesProgressFixtures;
@@ -80,6 +81,31 @@ class DashboardApiTest extends TestCase
                 ],
             ])
             ->assertJsonPath('response_data.courses.0.id', $ctx['classroomSubject']->id);
+    }
+
+    public function test_dashboard_quote_is_indonesian(): void
+    {
+        // Sebelumnya Inspiring::quote() bawaan Laravel — seluruhnya bahasa
+        // Inggris, di aplikasi yang sepenuhnya berbahasa Indonesia.
+        $ctx = $this->scaffold();
+
+        $inspire = $this->withToken($this->tokenFor($ctx['student']))
+            ->getJson('/api/v1/dashboard')
+            ->assertOk()
+            ->json('response_data.meta.inspire');
+
+        $this->assertContains($inspire, StudentQuotes::ALL);
+    }
+
+    public function test_quotes_carry_no_console_formatting(): void
+    {
+        // Inspiring::quote() dirancang untuk terminal: tag <options=bold> dan
+        // tanda kutip berspasi. Tidak boleh ada sisa format seperti itu.
+        foreach (StudentQuotes::ALL as $quote) {
+            $this->assertNotSame('', trim($quote));
+            $this->assertStringNotContainsString('<', $quote);
+            $this->assertStringNotContainsString('“ ', $quote);
+        }
     }
 
     public function test_dashboard_strips_web_url_from_upcoming_exam(): void
