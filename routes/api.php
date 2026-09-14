@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get(
     'warmhole',
-    fn() => response()->json(
+    fn () => response()->json(
         ['status' => 'ok']
     )
 );
