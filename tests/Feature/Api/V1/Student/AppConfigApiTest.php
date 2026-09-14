@@ -4,7 +4,6 @@ namespace Tests\Feature\Api\V1\Student;
 
 use Tests\TestCase;
 
-
 class AppConfigApiTest extends TestCase
 {
     private function configure(

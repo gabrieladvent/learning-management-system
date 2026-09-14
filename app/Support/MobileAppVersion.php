@@ -20,7 +20,7 @@ final class MobileAppVersion
     public static function storeUrlFor(Request $request): ?string
     {
         $platform = strtolower((string) $request->header('X-Client-Platform'));
-        
+
         $key = $platform === 'ios' ? 'ios' : 'android';
 
         $url = config("mobile_app.store_url.{$key}");

@@ -3,7 +3,7 @@
 namespace App\Actions\Student;
 
 use App\Models\Student;
-use Illuminate\Foundation\Inspiring;
+use App\Support\StudentQuotes;
 
 class GetStudentDashboard
 {
@@ -57,15 +57,8 @@ class GetStudentDashboard
                 'academic_year' => $primaryClassroom?->academic_year,
                 'homeroom_teacher_name' => $primaryClassroom?->teacher?->full_name,
                 'semester' => $activeSemester !== null ? (int) $activeSemester : null,
-                'inspire' => $this->cleanQuote(Inspiring::quote()),
+                'inspire' => StudentQuotes::random(),
             ],
         ];
-    }
-
-    private function cleanQuote(string $raw): string
-    {
-        $stripped = preg_replace('/<[^>]+>/', '', $raw) ?? $raw;
-
-        return trim(preg_replace('/\s+/', ' ', $stripped) ?? $stripped);
     }
 }
