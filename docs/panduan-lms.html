@@ -1,0 +1,865 @@
+<!doctype html>
+<html lang="id" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panduan LMS Sekolah</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dokumen dua kolom — rel daftar isi yang menempel di kiri, kolom isi bernomor di kanan; di layar sempit rel jadi daftar lipat di atas. */
+:root{
+  --bg:#f6f7f9; --surface:#ffffff; --surface-2:#eef1f5;
+  --ink:#141d27; --muted:#56636f; --line:#dfe4ea;
+  --accent:#1c5a78; --accent-ink:#134257; --accent-soft:#e4eef4;
+  --warn:#8a5a09; --warn-soft:#fbf1dd;
+  --stop:#8f2a2a; --stop-soft:#f9e9e8;
+  --ok:#1b6448; --ok-soft:#e3f1ea;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f141a; --surface:#161d25; --surface-2:#1d2630;
+  --ink:#e7edf3; --muted:#9dabb8; --line:#273240;
+  --accent:#74b8d8; --accent-ink:#a8d6ea; --accent-soft:#15303d;
+  --warn:#e3b068; --warn-soft:#2e2515;
+  --stop:#e99b96; --stop-soft:#331b1b;
+  --ok:#7fc8a4; --ok-soft:#142c22;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f141a; --surface:#161d25; --surface-2:#1d2630;
+  --ink:#e7edf3; --muted:#9dabb8; --line:#273240;
+  --accent:#74b8d8; --accent-ink:#a8d6ea; --accent-soft:#15303d;
+  --warn:#e3b068; --warn-soft:#2e2515;
+  --stop:#e99b96; --stop-soft:#331b1b;
+  --ok:#7fc8a4; --ok-soft:#142c22;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.62;-webkit-text-size-adjust:100%}
+.shell{display:grid;grid-template-columns:250px minmax(0,1fr);gap:40px;max-width:1180px;margin:0 auto;padding-inline:20px;padding-block:0 72px}
+@media (max-width:900px){.shell{grid-template-columns:minmax(0,1fr);gap:0}}
+
+/* ——— kop ——— */
+.masthead{grid-column:1/-1;border-bottom:1px solid var(--line);padding-block:40px 28px;margin-bottom:36px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:0 0 14px}
+.masthead h1{font-family:var(--serif);font-weight:700;font-size:clamp(30px,5.4vw,46px);line-height:1.1;letter-spacing:-.015em;margin:0;text-wrap:balance}
+.masthead p{max-width:62ch;color:var(--muted);margin:14px 0 0;font-size:16px}
+.who{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.who span{font-family:var(--mono);font-size:11.5px;letter-spacing:.04em;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 11px;color:var(--muted)}
+
+/* ——— rel daftar isi ——— */
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);align-self:start;max-height:calc(100vh - 48px);overflow-y:auto;padding-bottom:20px}
+.rail h2{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:22px 0 8px}
+.rail h2:first-child{margin-top:0}
+.rail a{display:block;color:var(--muted);text-decoration:none;font-size:13.5px;padding:3px 0 3px 12px;border-left:2px solid var(--line)}
+.rail a:hover{color:var(--accent);border-left-color:var(--accent)}
+.rail a b{font-family:var(--mono);font-weight:500;color:var(--line);margin-right:7px;font-size:12px}
+@media (max-width:900px){
+  .rail{position:static;max-height:none;overflow:visible;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:16px;margin-bottom:32px}
+}
+
+/* ——— isi ——— */
+main{min-width:0}
+section{scroll-margin-top:24px;margin-bottom:46px}
+section>h2{font-family:var(--serif);font-size:clamp(21px,3.2vw,27px);line-height:1.22;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance;display:flex;gap:12px;align-items:baseline}
+section>h2 .n{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--accent);flex:none;padding-top:2px}
+h3{font-family:var(--sans);font-size:15.5px;font-weight:600;margin:26px 0 8px;letter-spacing:-.005em}
+.part{grid-column:1/-1;font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);border-top:1px solid var(--line);padding-top:14px;margin:12px 0 30px}
+p{margin:0 0 12px;max-width:68ch}
+a{color:var(--accent);text-decoration-thickness:1px;text-underline-offset:2px}
+code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);border-radius:4px;padding:1.5px 5px}
+strong{font-weight:600}
+ul,ol{margin:0 0 14px;padding-left:22px;max-width:68ch}
+li{margin-bottom:6px}
+li::marker{color:var(--muted)}
+ol.steps{counter-reset:s;list-style:none;padding-left:0;max-width:68ch}
+ol.steps>li{counter-increment:s;position:relative;padding-left:34px;margin-bottom:11px}
+ol.steps>li::before{content:counter(s);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent-ink);font-family:var(--mono);font-size:11.5px;display:grid;place-items:center}
+ol.steps ul{margin:7px 0 0;padding-left:18px}
+
+/* ——— jalur menu ——— */
+.path{font-family:var(--mono);font-size:12.5px;line-height:1.9;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:11px 14px;margin:0 0 16px;overflow-x:auto;white-space:pre;color:var(--ink)}
+.url{font-family:var(--mono);font-size:13.5px;background:var(--surface);border:1px dashed var(--line);border-radius:8px;padding:10px 13px;margin:0 0 14px;overflow-x:auto;color:var(--accent-ink);word-break:break-all;white-space:normal}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .url{color:var(--accent)}}
+:root[data-theme="dark"] .url{color:var(--accent)}
+
+/* ——— kotak catatan ——— */
+.box{border-radius:10px;padding:14px 16px;margin:0 0 16px;border:1px solid var(--line);background:var(--surface);max-width:72ch}
+.box>:last-child{margin-bottom:0}
+.box .t{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 7px;font-weight:500}
+.box.warn{background:var(--warn-soft);border-color:transparent}
+.box.warn .t{color:var(--warn)}
+.box.stop{background:var(--stop-soft);border-color:transparent}
+.box.stop .t{color:var(--stop)}
+.box.ok{background:var(--ok-soft);border-color:transparent}
+.box.ok .t{color:var(--ok)}
+.box.ask{background:var(--accent-soft);border-color:transparent}
+.box.ask .t{color:var(--accent-ink)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .box.ask .t{color:var(--accent)}}
+:root[data-theme="dark"] .box.ask .t{color:var(--accent)}
+
+/* ——— kartu tanya cepat ——— */
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin:0 0 30px}
+.quick a{display:flex;flex-direction:column;gap:7px;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:15px 16px}
+.quick a:hover{border-color:var(--accent)}
+.quick .q{font-family:var(--serif);font-size:16px;font-weight:600;color:var(--ink);line-height:1.3}
+.quick .a{font-size:13px;color:var(--muted);line-height:1.5}
+.quick .go{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-top:auto}
+
+/* ——— tabel ——— */
+.tw{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:440px}
+th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--surface-2)}
+tbody tr:last-child td{border-bottom:0}
+td code{font-variant-numeric:tabular-nums}
+
+/* ——— daftar periksa ——— */
+.check{list-style:none;padding-left:0;counter-reset:c;max-width:72ch}
+.check>li{counter-increment:c;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:13px 16px 13px 46px;position:relative;margin-bottom:9px}
+.check>li::before{content:counter(c);position:absolute;left:14px;top:12px;width:21px;height:21px;border-radius:5px;background:var(--surface-2);color:var(--muted);font-family:var(--mono);font-size:11.5px;display:grid;place-items:center}
+.check .h{font-weight:600;display:block;margin-bottom:4px}
+.check .h em{font-style:normal;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--stop);margin-left:8px}
+.check p{margin:0 0 4px;font-size:13.5px;color:var(--muted);max-width:none}
+.check p:last-child{margin-bottom:0}
+.check code{font-size:.85em}
+
+/* ——— tanya-jawab ——— */
+.faq{border-top:1px solid var(--line);max-width:72ch}
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;padding:13px 2px;font-weight:600;font-size:14.5px;list-style:none;display:flex;gap:10px;align-items:flex-start}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::before{content:"+";font-family:var(--mono);color:var(--accent);flex:none;width:14px}
+.faq details[open] summary::before{content:"–"}
+.faq .body{padding:0 2px 15px 26px}
+.faq .body>:last-child{margin-bottom:0}
+.faq p{font-size:13.5px;color:var(--muted)}
+
+footer{grid-column:1/-1;border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:12.5px;max-width:68ch}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+
+<style>
+/* ——— override khusus cetak A4 ——— */
+@page { size: A4; margin: 17mm 15mm 16mm; }
+html, body { background:#fff }
+body { font-size:10.3pt; line-height:1.55 }
+.shell { display:block; max-width:none; margin:0; padding:0 }
+
+/* kop + sampul */
+.masthead { border-bottom:2px solid var(--ink); padding-block:0 18px; margin-bottom:26px; break-after:avoid }
+.masthead h1 { font-size:30pt }
+.masthead p { font-size:11pt; max-width:none }
+
+/* rel daftar isi -> halaman daftar isi */
+.rail { position:static; max-height:none; overflow:visible; border:0; background:none; padding:0; margin:0 0 18px;
+        columns:2; column-gap:26px }
+.rail h2 { break-after:avoid; margin:0 0 6px }
+.rail h2:not(:first-child) { margin-top:14px }
+.rail a { color:var(--ink); text-decoration:none; font-size:9.6pt; padding:2px 0 2px 10px }
+
+/* isi */
+main { display:block }
+.part { break-before:page; margin-top:0 }
+section { margin-bottom:26px; break-inside:auto }
+section > h2 { break-after:avoid; font-size:16.5pt; margin-top:4px }
+h3 { break-after:avoid; margin:17px 0 6px }
+p, li { max-width:none }
+p { orphans:3; widows:3 }
+ol.steps > li, ul > li { break-inside:avoid }
+.box, .tw, .check > li, .quick a, .path, .url { break-inside:avoid }
+.quick { grid-template-columns:1fr 1fr; gap:9px; margin-bottom:22px }
+.quick .go { display:none }
+.quick a { border-color:var(--ink) }
+.faq summary { break-after:avoid }
+.faq details { break-inside:avoid }
+.faq summary::before, .faq details[open] summary::before { content:"" ; width:0 }
+.faq .body { padding-left:0 }
+table { font-size:9.5pt; min-width:0 }
+th, td { padding:6px 9px }
+.tw { break-inside:auto }
+footer { break-inside:avoid; margin-top:22px }
+a { color:var(--ink); text-decoration:none }
+.rail a:hover, .quick a:hover { border-color:inherit }
+</style>
+</head>
+<body style="margin:0">
+<div class="shell">
+
+  <header class="masthead">
+    <p class="eyebrow">Manual Book · Learning Management System</p>
+    <h1>Panduan LMS Sekolah</h1>
+    <p>Panduan lengkap memakai LMS sekolah: dari membuat akun guru dan siswa, menyusun kelas dan mata pelajaran, membagikan materi dan tugas, sampai cara siswa mengumpulkan tugas. Ditulis untuk orang yang belum pernah membuka website ini.</p>
+    <div class="who"><span>Admin Sekolah</span><span>Guru</span><span>Siswa</span></div>
+  </header>
+
+  <nav class="rail" aria-label="Daftar isi">
+    <h2>Dasar</h2>
+    <a href="#s1"><b>1</b>Siapa memakai apa</a>
+    <a href="#s2"><b>2</b>Dua pintu masuk</a>
+    <a href="#s3"><b>3</b>Cara kerja datanya</a>
+    <a href="#s4"><b>4</b>Urutan setup</a>
+    <h2>Admin &amp; Guru</h2>
+    <a href="#s5"><b>5</b>Login admin / guru</a>
+    <a href="#s6"><b>6</b>Tambah sekolah</a>
+    <a href="#s7"><b>7</b>Tambah mapel</a>
+    <a href="#s8"><b>8</b>Tambah guru</a>
+    <a href="#s9"><b>9</b>Tambah kelas</a>
+    <a href="#s10"><b>10</b>Tambah siswa</a>
+    <a href="#s11"><b>11</b>Siswa ke kelas</a>
+    <a href="#s12"><b>12</b>Mapel ke kelas</a>
+    <a href="#s13"><b>13</b>Materi ke mapel</a>
+    <a href="#s14"><b>14</b>Tugas ke materi</a>
+    <a href="#s15"><b>15</b>Ujian ke materi</a>
+    <a href="#s16"><b>16</b>Menilai tugas</a>
+    <a href="#s17"><b>17</b>Rekap &amp; progress</a>
+    <h2>Siswa</h2>
+    <a href="#s18"><b>18</b>Panduan siswa</a>
+    <h2>Bantuan</h2>
+    <a href="#s19"><b>19</b>Materi tidak muncul</a>
+    <a href="#s20"><b>20</b>Tanya-jawab lain</a>
+    <a href="#s21"><b>21</b>Lampiran</a>
+  </nav>
+
+  <main>
+
+    <div class="quick">
+      <a href="#s2">
+        <span class="q">Siswa masuk pakai link mana dan email apa?</span>
+        <span class="a">Link <code>/student/login</code>. Tidak pakai email — login dengan NISN dan password tanggal lahir.</span>
+        <span class="go">Baca §2</span>
+      </a>
+      <a href="#s14">
+        <span class="q">Tambah tugas mapel ini di mana?</span>
+        <span class="a">Tugas menempel ke materi, bukan langsung ke mapel. Lewat tombol Kelola Aktivitas pada materi.</span>
+        <span class="go">Baca §14</span>
+      </a>
+      <a href="#s19">
+        <span class="q">Materi sudah diinput tapi di siswa tidak muncul?</span>
+        <span class="a">Delapan sebab yang mungkin, diurut dari yang paling sering. Periksa satu per satu.</span>
+        <span class="go">Baca §19</span>
+      </a>
+    </div>
+
+    <p class="part">Bagian A — Dasar</p>
+
+    <section id="s1">
+      <h2><span class="n">01</span>Siapa memakai apa</h2>
+      <p>LMS ini adalah website tempat guru membagikan <strong>materi</strong>, memberi <strong>tugas</strong> dan <strong>ujian</strong>, lalu menilainya; dan tempat siswa membaca materi serta mengumpulkan tugas.</p>
+      <div class="tw"><table>
+        <thead><tr><th>Pengguna</th><th>Bisa apa</th><th>Masuk dari</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Admin Sekolah</strong></td><td>Semua: sekolah, kelas, mapel, guru, siswa, memasukkan siswa ke kelas, plus semua menu guru</td><td>Panel Guru/Admin</td></tr>
+          <tr><td><strong>Guru</strong></td><td>Hanya mapel yang dia ajar: materi, tugas, ujian, menilai, rekap nilai, pantau progress</td><td>Panel Guru/Admin</td></tr>
+          <tr><td><strong>Siswa</strong></td><td>Materi kelasnya, mengumpulkan tugas, ikut ujian, melihat nilai</td><td>Portal Siswa</td></tr>
+        </tbody>
+      </table></div>
+      <div class="box warn">
+        <p class="t">Perlu diketahui</p>
+        <p>Guru <strong>tidak bisa</strong> menambah siswa, menambah kelas, menambah mata pelajaran baru, atau memasukkan siswa ke kelas. Menu itu hanya muncul untuk Admin Sekolah. Kalau guru membutuhkannya, minta ke admin.</p>
+      </div>
+    </section>
+
+    <section id="s2">
+      <h2><span class="n">02</span>Dua pintu masuk</h2>
+      <p>Website ini punya <strong>dua halaman login yang berbeda</strong>. Jangan tertukar — guru tidak bisa login di halaman siswa, dan sebaliknya. Ganti <code>domain-sekolah.sch.id</code> dengan alamat website LMS sekolah Anda.</p>
+
+      <h3>Pintu 1 — Admin &amp; Guru</h3>
+      <div class="url">https://domain-sekolah.sch.id/teacher</div>
+      <p>Masuk pakai <strong>email + password</strong>.</p>
+
+      <h3>Pintu 2 — Siswa</h3>
+      <div class="url">https://domain-sekolah.sch.id/student/login</div>
+      <p>Masuk pakai <strong>NISN + password</strong>. Siswa tidak memakai email. Kalau siswa hanya membuka alamat utama website tanpa tambahan apa pun, sistem otomatis mengarahkannya ke halaman ini — jadi untuk siswa cukup bagikan alamat utamanya.</p>
+
+      <div class="box ask">
+        <p class="t">Pertanyaan yang paling sering muncul</p>
+        <p><strong>“Siswa masuk pakai link yang mana dan email apa?”</strong></p>
+        <ul>
+          <li><strong>Link:</strong> <code>/student/login</code> — atau cukup alamat utama website, otomatis diarahkan ke sana.</li>
+          <li><strong>Email:</strong> tidak ada. Akun siswa di sistem ini memang dibuat <strong>tanpa email</strong>.</li>
+          <li><strong>NISN</strong> adalah username siswa, contoh <code>0012345001</code>.</li>
+          <li><strong>Password</strong> default-nya tanggal lahir siswa, format <code>YYYY-MM-DD</code>. Lahir 17 Agustus 2010 → <code>2010-08-17</code>.</li>
+          <li>Yang pakai email untuk login hanya <strong>guru dan admin</strong>, lewat <code>/teacher</code>.</li>
+        </ul>
+        <p>Kalau siswa diberi link <code>/teacher</code>, dia tidak akan bisa masuk — dan kalau siswa yang sudah login membuka halaman itu, sistem memantulkannya kembali ke dashboard siswa.</p>
+      </div>
+
+      <div class="box warn">
+        <p class="t">Wajib diberitahukan ke siswa</p>
+        <p>Pada login pertama, siswa <strong>dipaksa mengganti password</strong> dulu. Selama password default belum diganti, materi dan tugas belum bisa dibuka dan siswa terus dibawa ke halaman Profil. Itu bukan error — langkahnya ada di <a href="#s18">§18</a>.</p>
+      </div>
+    </section>
+
+    <section id="s3">
+      <h2><span class="n">03</span>Cara kerja datanya</h2>
+      <p>Bagian ini yang paling sering bikin bingung. Baca sekali, dan 90% masalah “kok tidak muncul” tidak akan terjadi. Susunan datanya bertingkat:</p>
+      <div class="path">Sekolah
+  └── Kelas  (contoh: "X IPA 1")
+        ├── Daftar Siswa          ← siswa harus DIMASUKKAN ke kelas
+        └── Mata Pelajaran kelas  ← Kelas + Mapel + Guru + Semester + Tahun Ajaran
+              └── Materi          (contoh: "Bab 1 — Pengenalan")
+                    ├── Tugas
+                    └── Ujian</div>
+      <ol class="steps">
+        <li><strong>“Mata Pelajaran” di menu Pengajaran bukan daftar nama mapel.</strong> Itu <strong>penugasan mengajar</strong>: <em>Matematika di kelas X IPA 1, diajar Bu Ani, Semester 1, Tahun Ajaran 2025/2026</em>. Satu mapel bisa muncul berkali-kali untuk kelas berbeda. Di panduan ini disebut <strong>“mapel kelas”</strong>.</li>
+        <li><strong>Materi ditempel ke “mapel kelas”, bukan ke mapel biasa.</strong> Materi Matematika X IPA 1 tidak otomatis terlihat oleh X IPA 2 — harus dibuat lagi di mapel kelas X IPA 2.</li>
+        <li><strong>Siswa hanya melihat materi dari kelas tempat dia terdaftar.</strong> Kalau siswa belum dimasukkan ke kelas, dashboard-nya kosong walaupun gurunya sudah mengisi banyak materi.</li>
+      </ol>
+    </section>
+
+    <section id="s4">
+      <h2><span class="n">04</span>Urutan setup</h2>
+      <p>Untuk sekolah atau kelas baru, kerjakan berurutan. Kalau diloncat, pilihan di menu berikutnya akan kosong.</p>
+      <div class="tw"><table>
+        <thead><tr><th>#</th><th>Langkah</th><th>Siapa</th><th>Menu</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><a href="#s6">Buat Sekolah</a></td><td>Admin</td><td>Master Data → Sekolah</td></tr>
+          <tr><td>2</td><td><a href="#s7">Buat Mata Pelajaran</a></td><td>Admin</td><td>Master Data → Mata Pelajaran</td></tr>
+          <tr><td>3</td><td><a href="#s8">Buat akun Guru</a></td><td>Admin</td><td>Manajemen Pengguna → Guru</td></tr>
+          <tr><td>4</td><td><a href="#s9">Buat Kelas + wali kelas</a></td><td>Admin</td><td>Master Data → Kelas</td></tr>
+          <tr><td>5</td><td><a href="#s10">Buat akun Siswa</a></td><td>Admin</td><td>Manajemen Pengguna → Siswa</td></tr>
+          <tr><td>6</td><td><a href="#s11"><strong>Masukkan siswa ke kelas</strong></a></td><td>Admin</td><td>Kelas → buka → Daftar Siswa</td></tr>
+          <tr><td>7</td><td><a href="#s12"><strong>Pasang mapel ke kelas + tentukan gurunya</strong></a></td><td>Admin</td><td>Kelas → buka → Mata Pelajaran</td></tr>
+          <tr><td>8</td><td><a href="#s13">Isi Materi</a></td><td>Guru</td><td>Pengajaran → Mata Pelajaran → Buka</td></tr>
+          <tr><td>9</td><td><a href="#s14">Tambah Tugas / Ujian</a></td><td>Guru</td><td>Materi → Kelola Aktivitas</td></tr>
+          <tr><td>10</td><td>Bagikan link + NISN + password ke siswa</td><td>Admin / Guru</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <div class="box stop">
+        <p class="t">Paling sering terlupa</p>
+        <p>Langkah <strong>6</strong> dan <strong>7</strong>. Keduanya adalah penyebab nomor satu keluhan “materi sudah diinput tapi siswa tidak melihat apa-apa”.</p>
+      </div>
+    </section>
+
+    <p class="part">Bagian B — Panduan Admin &amp; Guru</p>
+
+    <section id="s5">
+      <h2><span class="n">05</span>Login admin / guru</h2>
+      <ol class="steps">
+        <li>Buka <code>https://domain-sekolah.sch.id/teacher</code></li>
+        <li>Isi <strong>Email</strong> dan <strong>Password</strong>, klik <strong>Sign in</strong></li>
+        <li>Anda masuk ke Dashboard</li>
+      </ol>
+      <h3>Isi menu di sisi kiri</h3>
+      <ul>
+        <li><strong>Dashboard</strong> — statistik kelas, tugas yang menunggu dinilai, ujian terdekat, siswa yang perlu perhatian</li>
+        <li><strong>Pengajaran</strong> → <strong>Mata Pelajaran</strong> (pintu masuk ke materi), <strong>Pantau Progress Belajar</strong>, <strong>Rekap Nilai</strong></li>
+        <li><strong>Manajemen Pengguna</strong> <em>(admin)</em> → Guru, Siswa</li>
+        <li><strong>Master Data</strong> <em>(admin)</em> → Sekolah, Mata Pelajaran, Kelas</li>
+        <li><strong>Audit</strong> <em>(admin)</em> → Activity Logs</li>
+        <li>Ikon <strong>lonceng</strong> di kanan atas — notifikasi, misalnya ada siswa mengumpulkan tugas</li>
+        <li>Nama Anda di kanan atas → <strong>Profile</strong> untuk ganti nama/password, <strong>Sign out</strong> untuk keluar</li>
+      </ul>
+      <div class="box">
+        <p class="t">Password guru baru</p>
+        <p>Tanggal lahir dengan format <code>DDMMYYYY</code> — lahir 5 Maret 1990 → <code>05031990</code>. Kalau tanggal lahir tidak diisi saat akun dibuat, passwordnya <code>teacher123</code>. Segera ganti lewat menu Profile.</p>
+      </div>
+    </section>
+
+    <section id="s6">
+      <h2><span class="n">06</span>Tambah sekolah</h2>
+      <p>Hanya perlu sekali, kecuali sistem dipakai beberapa sekolah.</p>
+      <div class="path">Master Data → Sekolah → [New Sekolah]</div>
+      <ol class="steps">
+        <li>Isi data sekolah: nama dan kolom lain yang tersedia</li>
+        <li>Pastikan status <strong>aktif</strong> menyala — sekolah tidak aktif tidak muncul sebagai pilihan saat membuat kelas atau siswa</li>
+        <li>Klik <strong>Create</strong></li>
+      </ol>
+    </section>
+
+    <section id="s7">
+      <h2><span class="n">07</span>Tambah mata pelajaran</h2>
+      <p>Di sini Anda hanya mendaftarkan <strong>nama mapel</strong>-nya. Siapa yang mengajar dan di kelas mana ditentukan nanti di <a href="#s12">§12</a>.</p>
+      <div class="path">Master Data → Mata Pelajaran → [New Mata Pelajaran]</div>
+      <ol class="steps">
+        <li><strong>Nama Mata Pelajaran</strong> <em>(wajib)</em> — contoh <code>Matematika</code></li>
+        <li><strong>Kode</strong> — terisi otomatis dari nama saat Anda klik di luar kolom nama. Bisa diubah manual, atau klik ikon ⟳ di ujung kolom untuk membuat ulang. Kode tidak boleh sama dengan mapel lain.</li>
+        <li><strong>Deskripsi</strong> — opsional</li>
+        <li>Klik <strong>Create</strong>, lalu ulangi untuk semua mapel di sekolah</li>
+      </ol>
+    </section>
+
+    <section id="s8">
+      <h2><span class="n">08</span>Tambah guru</h2>
+      <p>Membuat data guru sekaligus akun login-nya.</p>
+      <div class="path">Manajemen Pengguna → Guru → [New Guru]</div>
+      <ol class="steps">
+        <li><strong>Nama Lengkap</strong> <em>(wajib)</em></li>
+        <li><strong>Email</strong> <em>(wajib)</em> — inilah yang dipakai guru untuk login. Harus unik.</li>
+        <li><strong>NIP</strong> / <strong>NIK</strong> — opsional, tapi kalau diisi harus unik</li>
+        <li><strong>Spesialisasi / Mapel</strong>, <strong>No. Telepon</strong> — opsional, sekadar catatan</li>
+        <li><strong>Jenis Kelamin</strong> <em>(wajib)</em></li>
+        <li><strong>Tempat Lahir</strong> — opsional. <strong>Tanggal Lahir</strong> — sangat disarankan diisi, karena password default dibuat dari tanggal ini.</li>
+        <li>Klik <strong>Create</strong></li>
+      </ol>
+      <div class="box ok">
+        <p class="t">Contoh pesan untuk guru</p>
+        <p>Link: <code>https://domain-sekolah.sch.id/teacher</code><br>Email: <code>guru@sekolah.sch.id</code><br>Password: <code>05031990</code> — tolong segera ganti di menu Profile.</p>
+      </div>
+      <h3>Guru lupa password</h3>
+      <p>Di daftar Guru, klik menu titik-tiga pada baris guru → <strong>Reset Password</strong> → konfirmasi. Password kembali ke <code>DDMMYYYY</code> tanggal lahirnya, dan sistem menampilkan passwordnya di notifikasi.</p>
+    </section>
+
+    <section id="s9">
+      <h2><span class="n">09</span>Tambah kelas</h2>
+      <div class="path">Master Data → Kelas → [New Kelas]</div>
+      <ol class="steps">
+        <li><strong>Nama Kelas</strong> <em>(wajib)</em> — contoh <code>X IPA 1</code></li>
+        <li><strong>Tingkat</strong> <em>(wajib)</em> — contoh <code>X</code></li>
+        <li><strong>Tahun Ajaran</strong> <em>(wajib)</em> — contoh <code>2025/2026</code></li>
+        <li><strong>Aktif</strong> — biarkan menyala</li>
+        <li><strong>Sekolah</strong> <em>(wajib)</em></li>
+        <li><strong>Wali Kelas</strong> <em>(wajib)</em> — pilih guru; guru harus sudah dibuat lebih dulu</li>
+        <li>Klik <strong>Create</strong></li>
+      </ol>
+      <p>Setelah kelas jadi, isinya <strong>masih kosong</strong>: belum ada siswa dan belum ada mapel. Dua bagian berikut yang mengisinya.</p>
+    </section>
+
+    <section id="s10">
+      <h2><span class="n">10</span>Tambah siswa</h2>
+      <div class="path">Manajemen Pengguna → Siswa → [New Siswa]</div>
+      <h3>Profil Siswa</h3>
+      <ol class="steps">
+        <li><strong>Nama Lengkap</strong> <em>(wajib)</em></li>
+        <li><strong>NISN</strong> — ini username login siswa, harus unik. Sangat disarankan diisi; tanpa NISN siswa tidak bisa login.</li>
+        <li><strong>Sekolah</strong> <em>(wajib)</em></li>
+        <li><strong>Kelas</strong> — kolom teks bebas, contoh <code>X IPA 1</code>. Ini <strong>hanya catatan</strong>, bukan pendaftaran ke kelas.</li>
+        <li><strong>Jenis Kelamin</strong> <em>(wajib)</em></li>
+        <li><strong>Siswa Aktif</strong> — biarkan menyala. Kalau dimatikan, siswa langsung tidak bisa login, dan yang sedang login akan dikeluarkan.</li>
+        <li><strong>Opt-out Learning Tracking</strong> — biarkan mati, kecuali siswa atau orang tua menolak aktivitas belajarnya dicatat</li>
+        <li><strong>Tempat Lahir</strong> opsional. <strong>Tanggal Lahir</strong> <em>(wajib)</em> — dipakai sebagai password default.</li>
+      </ol>
+      <h3>Akun Login</h3>
+      <p><strong>Password</strong> boleh dikosongkan. Kalau dikosongkan, password otomatis sama dengan tanggal lahir format <code>YYYY-MM-DD</code>. Isi manual hanya kalau Anda ingin password lain, minimal 6 karakter.</p>
+      <div class="box stop">
+        <p class="t">Jangan sampai salah</p>
+        <p>Mengisi kolom <strong>Kelas</strong> di form ini <strong>tidak</strong> membuat siswa melihat materi. Pendaftaran yang sah hanya lewat <a href="#s11">§11</a>.</p>
+      </div>
+      <div class="box ok">
+        <p class="t">Contoh pesan untuk siswa</p>
+        <p>Link: <code>https://domain-sekolah.sch.id/student/login</code><br>NISN: <code>0012345001</code><br>Password: <code>2010-08-17</code> (tanggal lahir kamu, format tahun-bulan-tanggal)<br>Nanti kamu diminta mengganti password dulu sebelum bisa membuka materi.</p>
+      </div>
+      <h3>Siswa lupa password</h3>
+      <p>Dua cara, keduanya dari <strong>Manajemen Pengguna → Siswa</strong>:</p>
+      <ul>
+        <li>Menu titik-tiga pada baris siswa → <strong>Reset Password ke Tanggal Lahir</strong>. Password kembali ke <code>YYYY-MM-DD</code> tanggal lahirnya.</li>
+        <li>Buka siswa → <strong>Edit</strong> → tombol <strong>Reset Password</strong> di kanan atas. Sistem membuat password acak 8 karakter dan menampilkannya <strong>sekali saja</strong> — salin segera.</li>
+      </ul>
+      <p>Jangan membuat akun siswa dua kali. Kalau NISN sudah terdaftar, sistem menolaknya. Satu siswa = satu akun, lalu masukkan ke kelas.</p>
+    </section>
+
+    <section id="s11">
+      <h2><span class="n">11</span>Tambah siswa ke kelas</h2>
+      <div class="box stop">
+        <p class="t">Langkah wajib</p>
+        <p>Tanpa ini, siswa tidak akan melihat mapel maupun materi apa pun — dashboard-nya benar-benar kosong.</p>
+      </div>
+      <div class="path">Master Data → Kelas → [View] kelasnya → tab "Daftar Siswa" → [Tambah Siswa]</div>
+      <ol class="steps">
+        <li>Pada kolom <strong>Siswa</strong>, cari dan pilih siswanya — bisa dicari dengan <strong>nama</strong> atau <strong>NISN</strong></li>
+        <li><strong>Tanggal Masuk</strong> sudah terisi hari ini, boleh diubah</li>
+        <li>Simpan, lalu ulangi untuk semua siswa di kelas itu</li>
+      </ol>
+      <p>Siswa yang sudah ada di kelas tersebut tidak muncul lagi di daftar pilihan, jadi tidak mungkin dobel.</p>
+      <h3>Mengeluarkan siswa dari kelas</h3>
+      <p>Di tab Daftar Siswa, menu titik-tiga pada baris siswa → <strong>Keluarkan dari Kelas</strong>. Bisa juga dicentang beberapa sekaligus. Ini tidak menghapus akun siswanya, hanya mencabut keanggotaan kelas — dan materi kelas itu langsung hilang dari dashboard siswa tersebut.</p>
+    </section>
+
+    <section id="s12">
+      <h2><span class="n">12</span>Pasang mapel ke kelas</h2>
+      <p>Juga langkah wajib. Di sini Anda menyatakan: <em>mapel ini, diajar guru ini, di kelas ini, semester ini</em>. Inilah yang muncul sebagai kartu mapel di dashboard siswa, dan inilah tempat guru menaruh materi.</p>
+      <h3>Cara A — dari Kelas (disarankan)</h3>
+      <div class="path">Master Data → Kelas → [View] kelasnya → tab "Mata Pelajaran" → [Tambah Mata Pelajaran]</div>
+      <ol class="steps">
+        <li><strong>Mata Pelajaran</strong> <em>(wajib)</em> — dari daftar yang dibuat di <a href="#s7">§7</a></li>
+        <li><strong>Guru Pengajar</strong> <em>(wajib)</em> — guru yang akan mengisi materi dan menilai</li>
+        <li><strong>Tahun Ajaran</strong> <em>(wajib)</em> — contoh <code>2025/2026</code></li>
+        <li><strong>Semester</strong> <em>(wajib)</em> — Semester 1 atau Semester 2</li>
+        <li>Klik <strong>Create</strong>, lalu ulangi untuk semua mapel di kelas itu</li>
+      </ol>
+      <h3>Cara B — dari menu Pengajaran</h3>
+      <div class="path">Pengajaran → Mata Pelajaran → [New Mengajar]</div>
+      <p>Isi <strong>Kelas</strong>, <strong>Mata Pelajaran</strong>, <strong>Guru Pengampu</strong> (otomatis terisi dengan diri Anda kalau Anda guru), <strong>Semester</strong>, <strong>Tahun Ajaran</strong>. Hasilnya sama dengan Cara A.</p>
+      <div class="box warn">
+        <p class="t">Kenapa menu guru bisa kosong</p>
+        <p>Guru hanya melihat dan bisa mengisi mapel kelas yang <strong>namanya tercantum sebagai Guru Pengajar</strong>. Kalau guru bilang “menu Mata Pelajaran saya kosong”, hampir pasti belum ada mapel kelas yang ditugaskan ke dia di langkah ini.</p>
+      </div>
+    </section>
+
+    <section id="s13">
+      <h2><span class="n">13</span>Tambah materi ke mapel</h2>
+      <p>Dikerjakan oleh guru pengampu; admin juga bisa.</p>
+      <div class="path">Pengajaran → Mata Pelajaran → [Buka] mapel kelasnya → tabel "Materi" → [Tambah Materi]</div>
+      <h3>Informasi Materi</h3>
+      <ul>
+        <li><strong>Judul</strong> <em>(wajib)</em> — contoh <code>Persamaan Kuadrat</code></li>
+        <li><strong>Topik / Pertemuan</strong> — contoh <code>Bab 1 — Pengenalan</code></li>
+      </ul>
+      <h3>Konten Materi — boleh salah satu, boleh ketiganya</h3>
+      <ul>
+        <li><strong>Teks Materi</strong> — editor teks: tebal, miring, daftar, tabel sederhana</li>
+        <li><strong>Upload File</strong> — beberapa file sekaligus, maksimal <strong>20 MB per file</strong> (PDF, Word, PPT, gambar, video)</li>
+        <li><strong>Link Eksternal</strong> — satu tautan, harus lengkap diawali <code>https://</code></li>
+      </ul>
+      <h3>Visibility &amp; Jadwal — ini yang menentukan siswa bisa lihat atau tidak</h3>
+      <ul>
+        <li><strong>Publish ke Siswa</strong> — <strong>wajib dinyalakan</strong>. Kalau mati, materi tidak terlihat siswa sama sekali, walau isinya sudah lengkap dan jadwalnya sudah lewat.</li>
+        <li><strong>Mulai Tampil</strong> — kosongkan kalau mau langsung tampil begitu dipublish. Kalau diisi, materi baru muncul setelah tanggal dan jam itu.</li>
+        <li><strong>Berhenti Tampil</strong> — kosongkan kalau mau tampil selamanya. Kalau diisi dan sudah lewat, materi hilang dari sisi siswa.</li>
+      </ul>
+      <p><strong>Mengubah urutan materi:</strong> gunakan ikon geser di tabel Materi — urutan ini yang dilihat siswa. <strong>Mengubah atau menghapus:</strong> menu titik-tiga pada baris materi.</p>
+      <div class="box warn">
+        <p class="t">Materi tidak mengirim notifikasi</p>
+        <p>Saat Anda mempublish <strong>materi</strong>, siswa tidak mendapat notifikasi lonceng. Yang mengirim notifikasi hanya <strong>Tugas</strong> dan <strong>Ujian</strong> yang baru dipublish. Jadi beritahu siswa lewat kelas atau grup, atau buat tugas terkait materi itu.</p>
+      </div>
+    </section>
+
+    <section id="s14">
+      <h2><span class="n">14</span>Tambah tugas ke materi</h2>
+      <div class="box ask">
+        <p class="t">Pertanyaan: “Tambah tugas mapel ini di mana?”</p>
+        <p>Tugas <strong>tidak ditempel langsung ke mapel</strong>, tapi <strong>ke salah satu materi di dalam mapel itu</strong>. Jadi buat materinya dulu — walaupun isinya baru judul — baru tugasnya. Tidak ada menu “Tugas” di sidebar; itu normal, bukan fitur yang hilang.</p>
+      </div>
+      <div class="path">Pengajaran → Mata Pelajaran → [Buka] mapel kelasnya
+  → tabel "Materi" → [Kelola Aktivitas] pada materinya
+    → tab "Tugas" → [Tambah Tugas]</div>
+      <h3>Informasi Tugas</h3>
+      <ul>
+        <li><strong>Judul Tugas</strong> <em>(wajib)</em></li>
+        <li><strong>Deskripsi / Soal</strong> — editor teks, tulis perintah atau soalnya di sini</li>
+        <li><strong>Batas Waktu</strong> <em>(wajib)</em> — tanggal <strong>dan jam</strong> deadline</li>
+        <li><strong>Nilai Maksimal</strong> — default <code>100</code></li>
+      </ul>
+      <h3>Lampiran Soal</h3>
+      <p><strong>File Lampiran (dari Guru)</strong> — upload file soal kalau ada, maksimal 20 MB per file, boleh beberapa.</p>
+      <h3>Aturan Pengumpulan Siswa</h3>
+      <ul>
+        <li><strong>Tipe File yang Diizinkan</strong> — centang format yang boleh dikumpulkan siswa: PDF, Word, Excel, PPT, gambar, ZIP, RAR, teks, MP3, MP4. Sudah ada centangan default.</li>
+        <li><strong>Maksimal Ukuran File per File (MB)</strong> <em>(wajib)</em> — default <code>10</code>, maksimal <code>100</code></li>
+        <li>Siswa selalu bisa menjawab berupa teks (esai) dan/atau melampirkan file; pengaturan di atas hanya membatasi file-nya.</li>
+      </ul>
+      <h3>Visibility &amp; Jadwal</h3>
+      <ul>
+        <li><strong>Publish ke Siswa</strong> — <strong>wajib dinyalakan</strong>. Saat pertama kali dinyalakan, semua siswa di kelas itu otomatis mendapat notifikasi.</li>
+        <li><strong>Mulai Tampil</strong> — kosongkan untuk langsung tampil</li>
+        <li><strong>Berhenti Tampil</strong> — kosongkan untuk tampil sampai deadline</li>
+      </ul>
+      <div class="box stop">
+        <p class="t">Deadline bersifat tegas</p>
+        <p>Setelah <strong>Batas Waktu</strong> terlewat, siswa <strong>tidak bisa lagi</strong> mengumpulkan atau mengubah pengumpulannya — tanpa pengecualian, tidak ada pengumpulan terlambat. Siswa juga terkunci setelah Anda memberi nilai, walaupun deadline belum lewat. Kalau perlu diperpanjang, edit tugasnya dan mundurkan Batas Waktu.</p>
+      </div>
+      <p>Sistem mengirim pengingat deadline otomatis ke siswa sekitar 24 jam sebelum batas waktu. Untuk melihat dan menilai pengumpulan, klik tombol <strong>Kelola</strong> pada baris tugas — lihat <a href="#s16">§16</a>.</p>
+    </section>
+
+    <section id="s15">
+      <h2><span class="n">15</span>Tambah ujian ke materi</h2>
+      <p>Jalurnya sama dengan tugas, hanya tab-nya berbeda.</p>
+      <div class="path">Pengajaran → Mata Pelajaran → [Buka] → tabel "Materi" → [Kelola Aktivitas] → tab "Ujian" → [Tambah Ujian]</div>
+      <div class="tw"><table>
+        <thead><tr><th>Mode</th><th>Cara kerjanya</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Online Quiz</strong></td><td>Siswa menjawab langsung di website. Soal diisi satu per satu: pilihan ganda, jawaban singkat, esai. Pilihan ganda dan jawaban singkat dinilai otomatis; esai menunggu guru. Ada <strong>durasi</strong> — saat waktu habis, jawaban siswa dikumpulkan otomatis oleh sistem.</td></tr>
+          <tr><td><strong>Submission</strong></td><td>Guru mengunggah file soal, siswa mengerjakan di luar lalu mengunggah file jawabannya.</td></tr>
+        </tbody>
+      </table></div>
+      <ul>
+        <li><strong>Publish ke Siswa</strong> tetap wajib dinyalakan. Saat dipublish siswa dapat notifikasi, dan ada pengingat otomatis sekitar 1 jam sebelum ujian mulai.</li>
+        <li>Untuk Online Quiz, jangan lupa <strong>mengisi soal</strong> di bagian Pertanyaan — ujian tanpa soal tidak ada gunanya walau sudah dipublish.</li>
+        <li>Kalau nilai belum mau diperlihatkan, gunakan pengaturan <strong>waktu rilis hasil</strong>. Selama belum waktunya, siswa hanya melihat status “sudah dikumpulkan” tanpa angka nilai.</li>
+      </ul>
+    </section>
+
+    <section id="s16">
+      <h2><span class="n">16</span>Menilai tugas siswa</h2>
+      <div class="path">Dashboard → panel tugas menunggu dinilai
+atau: Materi → [Kelola Aktivitas] → tab "Tugas" → [Kelola] → [Beri Nilai]</div>
+      <ol class="steps">
+        <li>Di halaman tugas, lihat tabel pengumpulan: <strong>Nama Siswa</strong>, <strong>NISN</strong>, <strong>Waktu Kumpul</strong>, <strong>Ketepatan</strong>, <strong>Status</strong>, <strong>Nilai</strong></li>
+        <li>Gunakan filter <strong>Status Pengumpulan</strong> atau <strong>Sudah Dinilai</strong> untuk menyaring</li>
+        <li>Klik <strong>Beri Nilai</strong> pada baris siswa</li>
+        <li>Periksa <strong>Esai / Jawaban Teks</strong>, <strong>Tautan Referensi</strong>, dan <strong>Lampiran Siswa</strong> yang bisa diunduh</li>
+        <li>Isi <strong>Nilai</strong> dan <strong>Feedback / Catatan untuk Siswa</strong>, lalu simpan</li>
+      </ol>
+      <p>Siswa otomatis mendapat notifikasi bahwa tugasnya sudah dinilai, dan nilai beserta feedback langsung terlihat di halaman tugasnya. Begitu nilai diisi, pengumpulan siswa <strong>terkunci</strong>.</p>
+    </section>
+
+    <section id="s17">
+      <h2><span class="n">17</span>Rekap nilai &amp; pantau progress</h2>
+      <h3>Rekap Nilai</h3>
+      <div class="path">Pengajaran → Rekap Nilai</div>
+      <p>Pilih mapel kelas di kolom pilihan atas. Tabel menampilkan semua siswa di baris, semua tugas dan ujian di kolom, beserta nilainya. Ada tombol untuk mengunduhnya ke <strong>Excel</strong>.</p>
+      <h3>Pantau Progress Belajar</h3>
+      <div class="path">Pengajaran → Pantau Progress Belajar</div>
+      <p>Menampilkan aktivitas belajar siswa — materi yang sudah dibuka atau diunduh, perkiraan durasi belajar — per mapel kelas, bisa dibuka sampai detail per siswa dan di-export. Siswa yang <strong>Opt-out Learning Tracking</strong>-nya dinyalakan tidak dicatat, jadi akan tampak kosong di sini; itu memang disengaja.</p>
+      <h3>Activity Logs <em>(admin)</em></h3>
+      <div class="path">Audit → Activity Logs</div>
+      <p>Catatan kejadian penting: pengumpulan tugas, sesi ujian, reset password.</p>
+    </section>
+
+    <p class="part">Bagian C — Panduan Siswa</p>
+
+    <section id="s18">
+      <h2><span class="n">18</span>Panduan untuk siswa</h2>
+      <p>Bagian ini bisa dicetak atau dibagikan apa adanya ke siswa.</p>
+
+      <h3>Masuk ke LMS</h3>
+      <ol class="steps">
+        <li>Buka browser di HP atau laptop — Chrome, Safari, Edge, bebas</li>
+        <li>Buka alamat <code>https://domain-sekolah.sch.id/student/login</code>, atau cukup alamat utama website sekolah</li>
+        <li>Akan muncul halaman <strong>Masuk Portal Siswa</strong></li>
+        <li>Isi <strong>NISN</strong> kamu, contoh <code>0012345001</code></li>
+        <li>Isi <strong>Password</strong>. Kalau belum pernah mengganti, passwordnya adalah <strong>tanggal lahir</strong> kamu format <code>TAHUN-BULAN-TANGGAL</code>. Lahir 17 Agustus 2010 → <code>2010-08-17</code>, pakai tanda minus, bulan dan tanggal dua angka. Ikon mata di kanan kolom bisa diklik untuk melihat apa yang kamu ketik.</li>
+        <li>Klik <strong>Masuk</strong></li>
+      </ol>
+      <div class="box ask">
+        <p class="t">Yang perlu kamu tahu</p>
+        <ul>
+          <li>Kamu <strong>tidak memakai email</strong>. Username kamu adalah NISN.</li>
+          <li>Jangan pakai link yang ada kata <code>teacher</code> — itu untuk guru, kamu tidak akan bisa masuk.</li>
+          <li>Salah password <strong>5 kali</strong> membuat akun terkunci sementara, sekitar 1 menit. Tunggu, lalu coba lagi dengan hati-hati.</li>
+          <li>Pesan “NISN atau password salah” bisa berarti NISN salah, password salah, <strong>atau</strong> akunmu dinonaktifkan. Kalau sudah yakin benar, hubungi guru atau admin.</li>
+        </ul>
+      </div>
+
+      <h3>Login pertama: wajib ganti password</h3>
+      <p>Saat pertama kali masuk kamu langsung dibawa ke halaman <strong>Profil Saya</strong> dengan pesan agar mengganti password. Ini normal, bukan error. Selama password belum diganti, menu materi dan tugas belum bisa dibuka.</p>
+      <ol class="steps">
+        <li>Di bagian <strong>Ubah Password</strong>, isi <strong>Password saat ini</strong> — tanggal lahir kamu, <code>2010-08-17</code></li>
+        <li>Isi <strong>Password baru</strong> — minimal 8 karakter, jangan pakai tanggal lahir lagi</li>
+        <li>Isi <strong>Konfirmasi password baru</strong> — ulangi password baru yang sama, lalu simpan</li>
+      </ol>
+      <p>Setelah berhasil, semua menu terbuka. <strong>Ingat password barumu</strong> — kalau lupa, kamu tidak bisa meresetnya sendiri, harus minta guru atau admin.</p>
+
+      <h3>Halaman utama (Dashboard)</h3>
+      <ul>
+        <li><strong>Kartu mata pelajaran</strong> — berisi nama mapel, nama guru, semester. Klik untuk membuka. Kartu bisa <strong>di-pin</strong> supaya selalu di urutan atas.</li>
+        <li><strong>Lonceng</strong> di atas — notifikasi: ada tugas atau ujian baru, tugasmu sudah dinilai, pengingat deadline</li>
+        <li><strong>To-Do</strong> — daftar tugas dan ujianmu dengan status <em>Tersedia sekarang</em>, <em>Belum dikumpul</em>, <em>Akan datang</em>, <em>Terlambat</em></li>
+        <li>Statistik singkat progres belajarmu</li>
+      </ul>
+      <div class="box warn">
+        <p class="t">Dashboard kosong, tidak ada kartu mapel sama sekali?</p>
+        <p>Berarti kamu belum dimasukkan ke kelas oleh admin, atau kelasmu belum dipasangkan mapel. Lapor ke guru atau admin — ini tidak bisa kamu perbaiki sendiri.</p>
+      </div>
+
+      <h3>Membuka materi</h3>
+      <ol class="steps">
+        <li>Klik kartu <strong>mata pelajaran</strong> di Dashboard</li>
+        <li>Muncul daftar <strong>materi</strong> yang sudah dibagikan guru, berurutan, lengkap dengan jumlah tugas atau ujian di dalamnya</li>
+        <li>Klik materinya. Di dalamnya kamu bisa membaca <strong>teks materi</strong>, <strong>mengunduh file</strong>, klik <strong>Buka tautan</strong> kalau guru melampirkan link, dan melihat daftar <strong>Tugas</strong> serta <strong>Ujian</strong> di bagian bawah</li>
+      </ol>
+      <p>Kalau tertulis “Materi belum berisi konten”, guru baru membuat judulnya dan belum mengisi. Daftar materi yang muncul hanya yang sudah dipublish guru dan sudah waktunya tampil — materi yang masih disiapkan guru memang tidak kelihatan.</p>
+
+      <h3>Mengumpulkan tugas</h3>
+      <ol class="steps">
+        <li>Buka <strong>mapel → materi → Tugas</strong> yang dituju</li>
+        <li>Baca deskripsi atau soalnya, unduh lampiran dari guru kalau ada</li>
+        <li>Perhatikan <strong>Batas Waktu</strong></li>
+        <li>Isi jawabanmu: menulis <strong>jawaban teks / esai</strong>, <strong>melampirkan file</strong> (perhatikan format yang diizinkan dan ukuran maksimal yang tertulis di halaman itu), dan/atau menambahkan <strong>tautan</strong></li>
+        <li>Klik <strong>Kumpulkan</strong>. Status berubah menjadi sudah dikumpulkan, lengkap dengan waktunya.</li>
+      </ol>
+      <div class="box stop">
+        <p class="t">Aturan yang wajib kamu tahu</p>
+        <ul>
+          <li><strong>Lewat deadline = tidak bisa mengumpulkan lagi.</strong> Sistem menolaknya tanpa pengecualian. Jangan menunda sampai menit terakhir.</li>
+          <li>Selama belum lewat deadline <strong>dan</strong> belum dinilai guru, kamu masih bisa mengedit pengumpulanmu.</li>
+          <li>Setelah guru memberi nilai, pengumpulan terkunci.</li>
+          <li>File ditolak? Formatnya tidak diizinkan, atau ukurannya melebihi batas. Keterangannya ada di halaman tugas.</li>
+        </ul>
+      </div>
+
+      <h3>Melihat nilai &amp; feedback</h3>
+      <p>Di halaman tugas, kalau sudah dinilai akan muncul <strong>nilai</strong> dan <strong>feedback dari guru</strong>. Kamu juga dapat notifikasi lonceng saat tugasmu dinilai. Di halaman <strong>Profil Saya</strong> ada <strong>Progres per Mata Pelajaran</strong>.</p>
+
+      <h3>Mengikuti ujian</h3>
+      <p><strong>A. Ujian online — menjawab di website</strong></p>
+      <ol class="steps">
+        <li>Buka <strong>mapel → materi → Ujian</strong>, baca jumlah soal, <strong>durasi</strong>, dan waktu mulai</li>
+        <li>Klik <strong>Mulai</strong> — begitu diklik, waktu langsung berjalan dan tidak bisa dihentikan</li>
+        <li>Jawab soal satu per satu. Jawabanmu <strong>tersimpan otomatis</strong> beberapa detik sekali, jadi kalau internet sempat terputus atau browser tertutup, jawaban yang sudah terisi tidak hilang — masuk lagi dan lanjutkan.</li>
+        <li>Klik <strong>Kumpulkan</strong> kalau sudah selesai. Kalau waktu habis, sistem mengumpulkan otomatis.</li>
+      </ol>
+      <p>Pakai koneksi yang stabil, jangan menutup tab, jangan menekan tombol <em>back</em> browser saat ujian berjalan. Soal pilihan ganda dan jawaban singkat dinilai otomatis; esai menunggu guru.</p>
+      <p><strong>B. Ujian unggah jawaban</strong> — unduh file soal dari guru, kerjakan di luar (tulis di buku lalu difoto, atau kerjakan di Word), lalu kembali ke halaman ujian, unggah file jawabanmu, dan kumpulkan.</p>
+      <p>Nilai belum muncul setelah ujian? Guru bisa mengatur agar hasil baru ditampilkan pada waktu tertentu, dan soal esai memang perlu dinilai manual. Tunggu pengumuman guru.</p>
+
+      <h3>Profil, foto, dan keluar</h3>
+      <ul>
+        <li><strong>Profil Saya</strong> → mengubah password kapan saja, mengganti foto profil (klik ikon kamera; PNG/JPG/WEBP, maksimal <strong>2 MB</strong>), melihat progres belajar per mapel</li>
+        <li><strong>Keluar:</strong> menu akun → <strong>Logout</strong>. Penting kalau memakai HP atau komputer bersama.</li>
+        <li>Kamu mungkin melihat pemberitahuan bahwa aktivitas belajarmu dicatat untuk keperluan pemantauan — klik <strong>Mengerti</strong> untuk menutupnya.</li>
+      </ul>
+
+      <h3>Kalau ada masalah</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Masalah</th><th>Yang harus dilakukan</th></tr></thead>
+        <tbody>
+          <tr><td>“NISN atau password salah”</td><td>Cek NISN. Cek format password <code>2010-08-17</code>. Tetap gagal → minta admin reset password</td></tr>
+          <tr><td>Terus diminta ganti password</td><td>Memang wajib di login pertama. Isi password lama (tanggal lahir) + password baru dua kali</td></tr>
+          <tr><td>“Terlalu banyak percobaan login”</td><td>Tunggu sekitar 1 menit, lalu coba lagi</td></tr>
+          <tr><td>“Akun Anda telah dinonaktifkan”</td><td>Hubungi admin sekolah</td></tr>
+          <tr><td>Dashboard kosong, tidak ada mapel</td><td>Kamu belum dimasukkan ke kelas → lapor guru atau admin</td></tr>
+          <tr><td>Mapel ada, materi kosong</td><td>Guru belum mempublish materi → tanya guru</td></tr>
+          <tr><td>Tidak bisa mengumpulkan tugas</td><td>Kemungkinan sudah lewat deadline, atau sudah dinilai guru</td></tr>
+          <tr><td>File tidak bisa diunggah</td><td>Format tidak diizinkan atau ukuran melebihi batas — cek keterangan di halaman tugas</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <p class="part">Bagian D — Bantuan</p>
+
+    <section id="s19">
+      <h2><span class="n">19</span>Materi tidak muncul di siswa</h2>
+      <div class="box ask">
+        <p class="t">Pertanyaan: “Sudah input materi, tapi di siswa tidak muncul”</p>
+        <p>Materi hanya muncul di sisi siswa kalau <strong>semua</strong> syarat di bawah terpenuhi. Periksa berurutan — biasanya penyebabnya nomor 1 atau 4.</p>
+      </div>
+      <ol class="check">
+        <li>
+          <span class="h">Siswa sudah dimasukkan ke kelas?<em>paling sering</em></span>
+          <p><strong>Master Data → Kelas → View</strong> kelasnya → tab <strong>Daftar Siswa</strong>. Nama siswa harus ada di daftar itu.</p>
+          <p>Mengisi kolom <strong>Kelas</strong> di form data siswa <strong>tidak cukup</strong> — kolom itu hanya label teks. Pendaftaran yang sah hanya lewat tab Daftar Siswa (<a href="#s11">§11</a>).</p>
+        </li>
+        <li>
+          <span class="h">Kelas itu sudah dipasangkan mapel + guru?</span>
+          <p><strong>Master Data → Kelas → View</strong> kelasnya → tab <strong>Mata Pelajaran</strong>. Mapelnya harus terdaftar di sana. Kalau kosong, siswa tidak punya kartu mapel sama sekali (<a href="#s12">§12</a>).</p>
+        </li>
+        <li>
+          <span class="h">Materi ditempel ke mapel kelas yang benar?</span>
+          <p>Materi menempel pada kombinasi <strong>kelas + mapel + semester + tahun ajaran</strong> tertentu. Sering terjadi: guru mengajar Matematika di X IPA 1 <em>dan</em> X IPA 2, lalu materinya hanya dibuat di salah satu. Kelas yang lain tetap kosong — materi tidak otomatis menyebar.</p>
+          <p>Cek juga <strong>semester</strong> dan <strong>tahun ajaran</strong> mapel kelas itu, jangan sampai materi masuk ke mapel kelas semester atau tahun lain.</p>
+        </li>
+        <li>
+          <span class="h">Toggle “Publish ke Siswa” sudah menyala?<em>sering</em></span>
+          <p>Buka materinya → bagian <strong>Visibility &amp; Jadwal</strong> → <strong>Publish ke Siswa</strong> harus <strong>ON</strong>. Di tabel Materi, kolom <strong>Publish</strong> harus bertanda centang hijau, bukan silang.</p>
+          <p>Kalau OFF, materi tidak terlihat sama sekali oleh siswa, walaupun isinya sudah lengkap.</p>
+        </li>
+        <li>
+          <span class="h">“Mulai Tampil” belum lewat?</span>
+          <p>Kalau diisi tanggal atau jam yang masih di masa depan, materi belum muncul — nanti muncul sendiri setelah waktu itu. Kalau mau langsung tampil, <strong>kosongkan</strong> kolom ini. Cek juga jamnya, bukan hanya tanggalnya.</p>
+        </li>
+        <li>
+          <span class="h">“Berhenti Tampil” sudah lewat?</span>
+          <p>Kalau diisi dan waktunya sudah lewat, materi hilang dari sisi siswa. Kalau mau tampil terus, <strong>kosongkan</strong> kolom ini.</p>
+        </li>
+        <li>
+          <span class="h">Siswanya masih aktif?</span>
+          <p><strong>Manajemen Pengguna → Siswa</strong> → <strong>Siswa Aktif</strong> harus menyala. Siswa nonaktif tidak bisa login sama sekali.</p>
+        </li>
+        <li>
+          <span class="h">Siswa sudah menyelesaikan ganti password?</span>
+          <p>Siswa yang belum mengganti password default terus dibawa ke halaman Profil dan belum bisa membuka materi. Dari sisi siswa, ini terasa seperti “materinya tidak ada”.</p>
+        </li>
+      </ol>
+      <div class="box ok">
+        <p class="t">Cara cepat memastikan</p>
+        <p>Minta satu siswa dari kelas itu login, lalu cek Dashboard-nya bersama.</p>
+        <ul>
+          <li>Dashboard kosong tanpa kartu mapel → masalahnya nomor <strong>1</strong> atau <strong>2</strong></li>
+          <li>Kartu mapel ada tapi daftar materi kosong → masalahnya nomor <strong>3, 4, 5,</strong> atau <strong>6</strong></li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="s20">
+      <h2><span class="n">20</span>Tanya-jawab lain</h2>
+      <div class="faq">
+        <details open><summary>Guru login, tapi menu Mata Pelajaran kosong</summary><div class="body">
+          <p>Belum ada mapel kelas yang ditugaskan ke guru itu. Admin perlu mengisikan guru tersebut sebagai <strong>Guru Pengajar</strong> di <a href="#s12">§12</a>. Guru hanya melihat mapel kelas yang namanya tercantum.</p>
+        </div></details>
+        <details open><summary>Guru tidak menemukan menu Siswa / Kelas / Mata Pelajaran (Master Data)</summary><div class="body">
+          <p>Normal. Menu itu hanya untuk Admin Sekolah.</p>
+        </div></details>
+        <details open><summary>Di sidebar tidak ada menu “Materi” atau “Tugas”</summary><div class="body">
+          <p>Normal, memang tidak ada. Materi diakses lewat <strong>Pengajaran → Mata Pelajaran → Buka</strong>, dan tugas lewat tombol <strong>Kelola Aktivitas</strong> pada materi.</p>
+        </div></details>
+        <details open><summary>Materi baru sudah dipublish, tapi siswa tidak dapat notifikasi</summary><div class="body">
+          <p>Mempublish <strong>materi</strong> tidak mengirim notifikasi — hanya <strong>Tugas</strong> dan <strong>Ujian</strong> yang mengirim notifikasi saat pertama kali dipublish. Beritahu siswa lewat jalur lain, atau buat tugas terkait materi itu.</p>
+        </div></details>
+        <details open><summary>Tugas sudah dipublish, tapi siswa tidak dapat notifikasi</summary><div class="body">
+          <p>Notifikasi dikirim saat toggle publish berubah dari OFF ke ON — termasuk kalau tugas langsung dibuat dengan publish ON. Kalau notifikasi sama sekali tidak sampai, ada kemungkinan antrian (queue) di server tidak jalan; hubungi pengelola teknis.</p>
+        </div></details>
+        <details open><summary>Siswa tidak bisa mengumpulkan tugas padahal tugasnya terlihat</summary><div class="body">
+          <p>Cek <strong>Batas Waktu</strong>. Sistem memakai deadline tegas: lewat deadline berarti ditolak. Kalau perlu diperpanjang, guru bisa mengedit tugas dan memundurkan Batas Waktu-nya.</p>
+        </div></details>
+        <details open><summary>Siswa ingin memperbaiki tugas yang sudah dikumpulkan</summary><div class="body">
+          <p>Boleh, selama belum lewat deadline <strong>dan</strong> belum dinilai. Kalau sudah dinilai, pengumpulan terkunci.</p>
+        </div></details>
+        <details open><summary>Satu siswa pindah kelas</summary><div class="body">
+          <p>Di kelas lama: <strong>Daftar Siswa → Keluarkan dari Kelas</strong>. Di kelas baru: <strong>Daftar Siswa → Tambah Siswa</strong>. Akun dan NISN-nya tetap sama — jangan buat akun baru.</p>
+        </div></details>
+        <details open><summary>NISN ditolak karena sudah ada</summary><div class="body">
+          <p>Siswa itu sudah punya akun. Cari di <strong>Manajemen Pengguna → Siswa</strong> lalu edit yang sudah ada, jangan buat akun kedua.</p>
+        </div></details>
+        <details open><summary>Admin atau guru lupa password</summary><div class="body">
+          <p>Admin lain bisa mereset lewat <strong>Manajemen Pengguna → Guru → Reset Password</strong>. Kalau tidak ada admin lain yang bisa masuk, hubungi pengelola teknis server.</p>
+        </div></details>
+        <details open><summary>File materi atau tugas gagal diunggah</summary><div class="body">
+          <p>Batasnya <strong>20 MB per file</strong> untuk materi dan lampiran soal. PDF terlalu besar: kompres dulu atau pecah jadi beberapa file. Untuk video, lebih baik unggah ke YouTube atau Drive lalu tempel sebagai <strong>Link Eksternal</strong>.</p>
+        </div></details>
+        <details open><summary>Ujian online siswa terputus di tengah jalan</summary><div class="body">
+          <p>Jawaban tersimpan otomatis. Siswa masuk lagi dan melanjutkan — sisa waktu tetap berjalan sejak tombol Mulai diklik. Kalau waktunya habis, sistem mengumpulkan otomatis.</p>
+        </div></details>
+      </div>
+    </section>
+
+    <section id="s21">
+      <h2><span class="n">21</span>Lampiran</h2>
+      <h3>Password default</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Siapa</th><th>Username</th><th>Password default</th><th>Format</th><th>Contoh</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Siswa</strong></td><td>NISN</td><td>Tanggal lahir</td><td><code>YYYY-MM-DD</code></td><td>lahir 17 Agu 2010 → <code>2010-08-17</code></td></tr>
+          <tr><td><strong>Guru</strong></td><td>Email</td><td>Tanggal lahir</td><td><code>DDMMYYYY</code></td><td>lahir 5 Mar 1990 → <code>05031990</code></td></tr>
+          <tr><td><strong>Guru</strong> tanpa tanggal lahir</td><td>Email</td><td><code>teacher123</code></td><td>—</td><td>—</td></tr>
+        </tbody>
+      </table></div>
+      <div class="box warn"><p class="t">Perhatikan</p><p>Format password siswa dan guru <strong>berbeda</strong>, dan ini sering tertukar. Siswa wajib mengganti password di login pertama; guru sangat disarankan mengganti lewat menu Profile.</p></div>
+
+      <h3>Batas ukuran file</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Keperluan</th><th>Batas</th></tr></thead>
+        <tbody>
+          <tr><td>File materi (guru)</td><td>20 MB per file, boleh beberapa</td></tr>
+          <tr><td>Lampiran soal tugas (guru)</td><td>20 MB per file, boleh beberapa</td></tr>
+          <tr><td>File pengumpulan tugas (siswa)</td><td>diatur guru per tugas — default 10 MB per file, maksimal 100 MB</td></tr>
+          <tr><td>Foto profil siswa</td><td>2 MB, PNG/JPG/WEBP</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3>Daftar istilah</h3>
+      <div class="tw"><table>
+        <thead><tr><th>Istilah di layar</th><th>Artinya</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Mata Pelajaran</strong> (Master Data)</td><td>Daftar nama mapel: Matematika, Bahasa Indonesia, …</td></tr>
+          <tr><td><strong>Mata Pelajaran</strong> (Pengajaran) / <strong>Mengajar</strong></td><td>Penugasan mengajar: mapel + kelas + guru + semester + tahun ajaran. Inilah “mapel kelas” tempat materi ditaruh</td></tr>
+          <tr><td><strong>Kelas</strong> (Master Data)</td><td>Kelas resmi, misal X IPA 1 — punya wali kelas, daftar siswa, dan daftar mapel</td></tr>
+          <tr><td><strong>Kelas</strong> (di form data siswa)</td><td>Hanya label teks. Tidak mendaftarkan siswa ke kelas mana pun</td></tr>
+          <tr><td><strong>Daftar Siswa</strong> (di dalam Kelas)</td><td>Pendaftaran siswa yang sah ke kelas. Ini yang menentukan siswa melihat materi atau tidak</td></tr>
+          <tr><td><strong>Materi</strong></td><td>Satu bahan ajar: teks, file, dan/atau link</td></tr>
+          <tr><td><strong>Kelola Aktivitas</strong></td><td>Tombol pada materi untuk masuk ke Tugas dan Ujian materi itu</td></tr>
+          <tr><td><strong>Publish ke Siswa</strong></td><td>Saklar buka/tutup. OFF berarti siswa tidak melihat sama sekali</td></tr>
+          <tr><td><strong>Mulai / Berhenti Tampil</strong></td><td>Jadwal kemunculan di sisi siswa. Kosong berarti langsung tampil / tampil selamanya</td></tr>
+          <tr><td><strong>Batas Waktu</strong></td><td>Deadline pengumpulan tugas. Lewat batas berarti ditolak sistem</td></tr>
+          <tr><td><strong>Online Quiz</strong></td><td>Ujian dijawab langsung di website, ada durasi, sebagian dinilai otomatis</td></tr>
+          <tr><td><strong>Submission</strong></td><td>Ujian atau tugas dengan cara mengunggah file jawaban</td></tr>
+          <tr><td><strong>To-Do</strong></td><td>Panel daftar tugas dan ujian siswa yang belum selesai</td></tr>
+          <tr><td><strong>Rekap Nilai</strong></td><td>Tabel nilai seluruh siswa per mapel kelas, bisa di-export Excel</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <footer>
+      <p>Nama menu dan tombol di panduan ini mengikuti versi aplikasi saat panduan dibuat. Kalau ada menu yang namanya berbeda sedikit, alurnya tetap sama. Ganti <code>domain-sekolah.sch.id</code> dengan alamat website LMS sekolah Anda sebelum panduan ini dibagikan.</p>
+    </footer>
+
+  </main>
+</div>
+
+</body>
+</html>

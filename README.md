@@ -32,6 +32,7 @@ Login Filament default (cek `RoleSeeder` & `TeacherSeeder` untuk credential). Si
 ## Architecture Highlights
 
 - **Pages dokumen** ada di [docs/](docs/) — baca [10-development-phases.md](docs/10-development-phases.md) untuk fase pengembangan.
+- **Panduan pemakaian untuk admin/guru/siswa** (non-teknis): [12-manual-book.md](docs/12-manual-book.md) — versi cetak: [panduan-lms.pdf](docs/panduan-lms.pdf), di-render dari [panduan-lms.html](docs/panduan-lms.html) dengan `chrome --headless --no-pdf-header-footer --print-to-pdf`.
 - **Auth siswa terpisah**: guard `student` di [config/auth.php](config/auth.php).
 - **Activity log otomatis** lewat trait `LogsActivity` di `AssignmentSubmission`, `ExamSession`, `ExamAnswer`. Causer resolve via custom resolver di [AppServiceProvider](app/Providers/AppServiceProvider.php).
 - **Notifikasi siswa**: 4 class di [app/Notifications/](app/Notifications/) — published, graded, deadline reminder. Batch (Published) pakai `ShouldQueue`.
