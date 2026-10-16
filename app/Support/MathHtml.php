@@ -101,7 +101,35 @@ class MathHtml
             ? $raw
             : nl2br(e($raw), false);
 
-        return static::sanitizeAndWrapInline(static::wrapEnvironments($html));
+        $rendered = static::sanitizeAndWrapInline(static::wrapEnvironments($html));
+
+        if (static::plainText($rendered) === static::plainText($raw)) {
+            return $rendered;
+        }
+
+        // Parser membuang isi — terjadi mis. saat markup bersarang lebih dari 256
+        // level (batas keras libxml). Jangan pernah menampilkan jawaban kosong:
+        // ratakan dulu jadi teks berbaris, lalu render ulang.
+        $flattened = static::sanitizeAndWrapInline(
+            static::wrapEnvironments(nl2br(e(static::markupToText($raw)), false))
+        );
+
+        return static::plainText($flattened) === static::plainText($raw)
+            ? $flattened
+            : nl2br(e(static::markupToText($raw)), false);
+    }
+
+    /**
+     * Teks murni untuk membandingkan sebelum/sesudah render: tag, entity, spasi,
+     * dan delimiter `$` dibuang supaya yang dibandingkan benar-benar isinya.
+     */
+    private static function plainText(string $html): string
+    {
+        return preg_replace(
+            '/[\s$]+/u',
+            '',
+            html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8')
+        ) ?? '';
     }
 
     private static function looksLikeHtml(string $raw): bool

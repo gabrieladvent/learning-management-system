@@ -172,6 +172,37 @@ class MathHtmlTest extends TestCase
         );
     }
 
+    /**
+     * libxml berhenti mem-parse pada kedalaman tag > 256 dan membuang isinya.
+     * Jawaban siswa TIDAK BOLEH hilang dari layar guru gara-gara itu.
+     */
+    public function test_extremely_nested_markup_keeps_its_content(): void
+    {
+        $raw = str_repeat('<div>', 400).'Jawaban: \sin \theta'.str_repeat('</div>', 400);
+
+        $html = MathHtml::render($raw);
+
+        $this->assertStringContainsString('Jawaban:', $html);
+        $this->assertStringContainsString('math-inline', $html);
+    }
+
+    public function test_rendering_twice_changes_nothing(): void
+    {
+        $once = MathHtml::render('<div>Diketahui \sin \theta = \frac{9}{41} dan x^2 + 1</div>');
+
+        $this->assertSame($once, MathHtml::render($once));
+    }
+
+    public function test_utf8_characters_around_math_stay_intact(): void
+    {
+        $html = MathHtml::render('<div>Hasilnya ✅\sin \theta→selesai, β-nya \frac{1}{2}—oke</div>');
+
+        $this->assertTrue(mb_check_encoding($html, 'UTF-8'));
+        foreach (['✅', '→', 'β', '—'] as $char) {
+            $this->assertStringContainsString($char, $html);
+        }
+    }
+
     public function test_dangerous_markup_is_stripped(): void
     {
         $html = MathHtml::render(
