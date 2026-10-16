@@ -125,6 +125,16 @@ class MathHtml
      */
     private static function plainText(string $html): string
     {
+        // Isi <script>/<style>/<noscript>/<template> memang SENGAJA dibuang
+        // sanitizer. Kalau ikut dihitung, pembanding akan menyangka ada teks
+        // yang hilang lalu meratakan markup — dan source-nya malah tampil
+        // sebagai teks di layar guru.
+        $html = preg_replace(
+            '#<(script|style|noscript|template)\b[^>]*>.*?</\1\s*>#is',
+            '',
+            $html
+        ) ?? $html;
+
         return preg_replace(
             '/[\s$]+/u',
             '',

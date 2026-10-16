@@ -203,6 +203,23 @@ class MathHtmlTest extends TestCase
         }
     }
 
+    /**
+     * Isi <script>/<style> sengaja dibuang sanitizer. Jaring pengaman "teks
+     * hilang" tidak boleh menyangka itu kehilangan data, lalu meratakan markup
+     * dan menumpahkan source-nya sebagai teks ke layar guru.
+     */
+    public function test_script_and_style_source_never_leaks_as_text(): void
+    {
+        $html = MathHtml::render(
+            '<div>Jawaban \sin \theta</div><style>body{color:red}</style><script>alert(1)</script>'
+        );
+
+        $this->assertStringNotContainsString('body{color:red}', $html);
+        $this->assertStringNotContainsString('alert(1)', $html);
+        $this->assertStringContainsString('math-inline', $html);
+        $this->assertStringContainsString('Jawaban', $html);
+    }
+
     public function test_dangerous_markup_is_stripped(): void
     {
         $html = MathHtml::render(
