@@ -4,6 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
+use App\Models\Exam;
+use App\Models\ExamAnswer;
+use App\Models\ExamQuestion;
+use App\Models\ExamSession;
 use App\Models\Student;
 use Illuminate\Database\Seeder;
 
@@ -38,6 +42,109 @@ class SubmissionSampleSeeder extends Seeder
         $this->seedFor('Bahasa Inggris', [
             'Ahmad Fauzi' => $this->englishEssayAnswer(),
         ]);
+
+        $this->seedTeacherFeedback();
+        $this->seedQuizEssayAnswer();
+        $this->seedAssignmentDescription();
+    }
+
+    /**
+     * Feedback guru berisi math + baris baru — dulu tampil gepeng tanpa rumus
+     * di halaman siswa.
+     */
+    private function seedTeacherFeedback(): void
+    {
+        $submission = AssignmentSubmission::query()
+            ->whereHas('student', fn ($q) => $q->where('full_name', 'Ahmad Fauzi'))
+            ->whereHas(
+                'assignment.material.classroomSubject.subject',
+                fn ($q) => $q->where('name', 'Matematika')
+            )
+            ->first();
+
+        if (! $submission) {
+            return;
+        }
+
+        $submission->update([
+            'score' => 85,
+            'feedback' => "Soal 1 sudah benar.\n"
+                ."Soal 2c kurang teliti: seharusnya \\cos \\theta = \\frac{40}{41}, bukan \\frac{4}{41}.\n"
+                .'Lain kali tulis langkahnya ya.',
+        ]);
+
+        $this->command?->info('Feedback guru ditambahkan ke submission Ahmad Fauzi (Matematika).');
+    }
+
+    /**
+     * Jawaban esai pada ujian mode kuis — dulu tag <div>-nya bocor sebagai teks
+     * ke layar guru dan LaTeX-nya tidak dirender.
+     */
+    private function seedQuizEssayAnswer(): void
+    {
+        $exam = Exam::query()
+            ->whereHas('material.classroomSubject.subject', fn ($q) => $q->where('name', 'Matematika'))
+            ->where('mode', 'online_quiz')
+            ->orderBy('created_at')
+            ->first();
+
+        $student = Student::query()->where('full_name', 'Ahmad Fauzi')->first();
+
+        if (! $exam || ! $student) {
+            return;
+        }
+
+        $question = ExamQuestion::updateOrCreate(
+            ['exam_id' => $exam->id, 'order' => 99],
+            [
+                'type' => 'essay',
+                'question' => '<div>Jika \sin \theta = \frac{9}{41}, hitung \cos \theta dan jelaskan langkahnya.</div>',
+                'score' => 20,
+            ],
+        );
+
+        $session = ExamSession::updateOrCreate(
+            ['exam_id' => $exam->id, 'student_id' => $student->id],
+            ['started_at' => now()->subMinutes(40), 'submitted_at' => now()->subMinutes(10)],
+        );
+
+        ExamAnswer::updateOrCreate(
+            ['exam_session_id' => $session->id, 'exam_question_id' => $question->id],
+            ['answer' => $this->asTrixHtml([
+                'Gunakan identitas \sin^2 \theta + \cos^2 \theta = 1.',
+                '',
+                '\cos \theta = \sqrt{1 - \frac{81}{1681}} = \sqrt{\frac{1600}{1681}} = \frac{40}{41}',
+                '',
+                'Jadi \cos \theta = \frac{40}{41}.',
+            ])],
+        );
+
+        $this->command?->info("Jawaban esai kuis ditambahkan → /teacher/exams/{$exam->id}");
+    }
+
+    /**
+     * Deskripsi tugas buatan guru yang berisi LaTeX tanpa delimiter — dulu
+     * tampil mentah di halaman View guru maupun di halaman siswa.
+     */
+    private function seedAssignmentDescription(): void
+    {
+        $assignment = Assignment::query()
+            ->whereHas('material.classroomSubject.subject', fn ($q) => $q->where('name', 'Matematika'))
+            ->where('title', 'like', 'Soal Aplikasi:%')
+            ->orderBy('created_at')
+            ->first();
+
+        $assignment?->update([
+            'description' => $this->asTrixHtml([
+                'Kerjakan soal berikut.',
+                '',
+                '1. Diketahui \sin \theta = \frac{9}{41}. Hitung \cos \theta dan \tan \theta.',
+                '',
+                '2. Buktikan bahwa x^2 + y^2 = z^2 berlaku pada segitiga siku-siku.',
+            ]),
+        ]);
+
+        $this->command?->info('Deskripsi tugas Matematika diisi LaTeX tanpa delimiter.');
     }
 
     /**
