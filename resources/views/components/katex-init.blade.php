@@ -7,6 +7,17 @@
 <script src="https://unpkg.com/mathlive@0.103.0/dist/mathlive.min.js"></script>
 
 <style>
+    /* Render jawaban siswa (App\Support\MathHtml): display math rata kiri &
+       rumus panjang bisa di-scroll, bukan merusak lebar kolom. */
+    .math-block {
+        display: block; max-width: 100%; overflow-x: auto; padding: 2px 0;
+    }
+    .math-inline > .katex { white-space: nowrap; }
+    .katex-display { margin: 0.75em 0; text-align: left; }
+    .katex-display > .katex {
+        text-align: left; display: inline-block; white-space: normal;
+    }
+
     /* Floating math editor button — icon only, expand on hover */
     .math-editor-fab {
         position: fixed; bottom: 24px; right: 24px; z-index: 9999;

@@ -432,7 +432,10 @@ export default function ExamSubmissionFormPage() {
                                 Feedback Guru
                             </h2>
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-                                {submission.feedback}
+                                <MathContent
+                                    html={submission.feedback_html ?? submission.feedback ?? ''}
+                                    className="prose prose-sm prose-slate max-w-none prose-p:my-1"
+                                />
                             </div>
                         </section>
                     )}
@@ -499,7 +502,7 @@ function SubmissionPreview({
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Jawaban</div>
                     <div className="mt-2 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-800">
                         <MathContent
-                            html={submission.content}
+                            html={submission.content_html ?? submission.content}
                             className="prose prose-sm prose-slate max-w-none prose-p:my-2"
                         />
                     </div>

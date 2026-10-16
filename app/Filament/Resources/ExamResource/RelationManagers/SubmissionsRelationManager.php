@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ExamResource\RelationManagers;
 
 use App\Models\Enums\ExamModeEnum;
+use App\Support\MathHtml;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
@@ -51,11 +52,15 @@ class SubmissionsRelationManager extends RelationManager
 
                     Placeholder::make('content_view')
                         ->label('Esai / Jawaban Teks')
-                        ->content(fn ($record) => new HtmlString(
-                            '<div class="prose dark:prose-invert max-w-none">'
-                            .($record?->content ?: '<em class="text-gray-500">Tidak ada teks</em>')
-                            .'</div>'
-                        ))
+                        ->content(function ($record) {
+                            $html = MathHtml::render($record?->content);
+
+                            return new HtmlString(
+                                '<div class="prose dark:prose-invert max-w-none">'
+                                .($html !== '' ? $html : '<em class="text-gray-500">Tidak ada teks</em>')
+                                .'</div>'
+                            );
+                        })
                         ->columnSpanFull(),
 
                     Placeholder::make('link_view')

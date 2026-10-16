@@ -5,6 +5,7 @@ namespace App\Actions\Student;
 use App\Models\ExamQuestion;
 use App\Models\ExamSession;
 use App\Models\Student;
+use App\Support\MathHtml;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -127,8 +128,11 @@ class GetStudentExamSession
         return [
             'id' => $question->id,
             'type' => $question->type->value,
-            'question' => $question->question,
-            'options' => $question->options ?? [],
+            'question' => MathHtml::render($question->question),
+            'options' => array_map(
+                fn ($option) => is_string($option) ? MathHtml::render($option) : $option,
+                $question->options ?? [],
+            ),
             'score' => (float) $question->score,
             'files' => $files,
         ];

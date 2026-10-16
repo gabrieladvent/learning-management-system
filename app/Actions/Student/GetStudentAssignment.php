@@ -6,6 +6,7 @@ use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use App\Models\Material;
 use App\Models\Student;
+use App\Support\MathHtml;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -94,7 +95,7 @@ class GetStudentAssignment
             'assignment' => [
                 'id' => $assignment->id,
                 'title' => $assignment->title,
-                'description' => $assignment->description,
+                'description' => MathHtml::render($assignment->description),
                 'deadline' => $assignment->deadline?->toIso8601String(),
                 'max_score' => $assignment->max_score !== null ? (float) $assignment->max_score : null,
                 'allowed_file_types' => $assignment->allowed_file_types ?? Assignment::DEFAULT_FILE_TYPES,
@@ -216,10 +217,16 @@ class GetStudentAssignment
         return [
             'id' => $submission->id,
             'content' => $submission->content,
+            // Versi siap-render (math sudah berdelimiter + tersanitasi); `content`
+            // tetap mentah karena dipakai Trix saat siswa mengedit jawabannya.
+            'content_html' => MathHtml::render($submission->content),
             'link_url' => $submission->link_url,
             'submitted_at' => $submission->submitted_at?->toIso8601String(),
             'score' => $submission->score !== null ? (float) $submission->score : null,
             'feedback' => $submission->feedback,
+            // Feedback guru ditulis di textarea polos: baris barunya perlu <br>
+            // dan math-nya perlu delimiter sebelum sampai ke MathContent.
+            'feedback_html' => MathHtml::render($submission->feedback),
             'files' => $files,
         ];
     }

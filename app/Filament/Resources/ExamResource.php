@@ -8,6 +8,7 @@ use App\Filament\Resources\ExamResource\RelationManagers;
 use App\Models\Enums\ExamModeEnum;
 use App\Models\Enums\ExamStatusEnum;
 use App\Models\Exam;
+use App\Support\MathHtml;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Radio;
@@ -204,6 +205,7 @@ class ExamResource extends Resource
                     TextEntry::make('description')
                         ->label('Deskripsi / Petunjuk')
                         ->html()
+                        ->formatStateUsing(fn ($state) => MathHtml::render($state))
                         ->placeholder('—')
                         ->columnSpanFull(),
                 ])->columns(2),

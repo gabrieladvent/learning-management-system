@@ -8,6 +8,7 @@ use App\Models\Enums\ExamModeEnum;
 use App\Models\Exam;
 use App\Models\ExamSession;
 use App\Models\Student;
+use App\Support\MathHtml;
 use Illuminate\Database\Eloquent\Builder;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -101,7 +102,7 @@ class GetStudentMaterial
                 'title' => $material->title,
                 'topic' => $material->topic,
                 'description' => $material->description,
-                'content' => $material->content,
+                'content' => MathHtml::render($material->content),
                 'link_url' => $material->link_url,
                 'available_from' => $material->available_from?->toIso8601String(),
                 'available_until' => $material->available_until?->toIso8601String(),

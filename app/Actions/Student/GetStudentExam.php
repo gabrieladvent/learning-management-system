@@ -8,6 +8,7 @@ use App\Models\ExamSession;
 use App\Models\ExamSubmission;
 use App\Models\Material;
 use App\Models\Student;
+use App\Support\MathHtml;
 use Illuminate\Database\Eloquent\Builder;
 use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -65,7 +66,7 @@ class GetStudentExam
             'exam' => [
                 'id' => $exam->id,
                 'title' => $exam->title,
-                'description' => $exam->description,
+                'description' => MathHtml::render($exam->description),
                 'mode' => $mode,
                 'starts_at' => $exam->starts_at?->toIso8601String(),
                 'duration_minutes' => $exam->duration_minutes,
@@ -186,10 +187,16 @@ class GetStudentExam
         return [
             'id' => $submission->id,
             'content' => $submission->content,
+            // Versi siap-render (math sudah berdelimiter + tersanitasi); `content`
+            // tetap mentah karena dipakai Trix saat siswa mengedit jawabannya.
+            'content_html' => MathHtml::render($submission->content),
             'link_url' => $submission->link_url,
             'submitted_at' => $submission->submitted_at?->toIso8601String(),
             'score' => $submission->score !== null ? (float) $submission->score : null,
             'feedback' => $submission->feedback,
+            // Feedback guru ditulis di textarea polos: baris barunya perlu <br>
+            // dan math-nya perlu delimiter sebelum sampai ke MathContent.
+            'feedback_html' => MathHtml::render($submission->feedback),
             'files' => $files,
         ];
     }

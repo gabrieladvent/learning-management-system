@@ -33,11 +33,16 @@ export interface AssignmentDetail {
 
 export interface AssignmentSubmission {
     id: string;
+    /** Jawaban mentah — dipakai untuk mengisi editor saat edit. */
     content: string | null;
+    /** Jawaban siap tampil: math sudah berdelimiter & HTML tersanitasi. */
+    content_html: string | null;
     link_url: string | null;
     submitted_at: string | null;
     score: number | null;
     feedback: string | null;
+    /** Feedback siap tampil: baris baru jadi <br>, math berdelimiter. */
+    feedback_html: string | null;
     files: MaterialFile[];
 }
 

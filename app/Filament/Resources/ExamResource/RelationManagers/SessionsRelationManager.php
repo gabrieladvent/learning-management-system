@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ExamResource\RelationManagers;
 
 use App\Models\Enums\ExamModeEnum;
 use App\Models\Enums\QuestionTypeEnum;
+use App\Support\MathHtml;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Textarea;
@@ -123,10 +124,13 @@ class SessionsRelationManager extends RelationManager
                                         $html .= '<div class="flex items-center justify-between mb-2">';
                                         $html .= '<div class="font-semibold">Soal '.$no.' <span class="ml-2 text-xs text-gray-500">('.$type.' · '.$q->score.' poin)</span></div>';
                                         $html .= $statusBadge.'</div>';
-                                        $html .= '<div class="prose dark:prose-invert max-w-none mb-3">'.$q->question.'</div>';
+                                        $html .= '<div class="prose dark:prose-invert max-w-none mb-3">'.MathHtml::render($q->question).'</div>';
+                                        $answerHtml = MathHtml::render($answer->answer);
                                         $html .= '<div class="bg-gray-50 dark:bg-gray-800 p-3 rounded text-sm">';
                                         $html .= '<div class="text-xs text-gray-500 mb-1">Jawaban Siswa:</div>';
-                                        $html .= '<div>'.e($answer->answer ?? '—').'</div>';
+                                        $html .= '<div class="prose dark:prose-invert max-w-none">'
+                                            .($answerHtml !== '' ? $answerHtml : '—')
+                                            .'</div>';
                                         $html .= '</div>';
                                         if ($q->correct_answer) {
                                             $html .= '<div class="mt-2 text-xs text-gray-500">Kunci: <strong>'.e($q->correct_answer).'</strong>';
@@ -168,7 +172,15 @@ class SessionsRelationManager extends RelationManager
                                             ->content(fn ($get) => new HtmlString($get('question_html') ?? '')),
                                         Placeholder::make('answer_text')
                                             ->label('Jawaban Siswa')
-                                            ->content(fn ($get) => new HtmlString('<div class="p-3 bg-gray-50 dark:bg-gray-800 rounded">'.e($get('answer') ?? '—').'</div>')),
+                                            ->content(function ($get) {
+                                                $answerHtml = MathHtml::render($get('answer'));
+
+                                                return new HtmlString(
+                                                    '<div class="prose dark:prose-invert max-w-none p-3 bg-gray-50 dark:bg-gray-800 rounded">'
+                                                    .($answerHtml !== '' ? $answerHtml : '—')
+                                                    .'</div>'
+                                                );
+                                            }),
                                         TextInput::make('score')
                                             ->label('Skor')
                                             ->numeric()
@@ -181,7 +193,7 @@ class SessionsRelationManager extends RelationManager
                                     ->default(
                                         $essayAnswers->map(fn ($a) => [
                                             'answer_id' => $a->id,
-                                            'question_html' => $a->question->question,
+                                            'question_html' => MathHtml::render($a->question->question),
                                             'answer' => $a->answer,
                                             'score' => $a->score,
                                             'feedback' => $a->feedback,

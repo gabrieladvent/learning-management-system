@@ -6,6 +6,7 @@ use App\Filament\Concerns\ScopesToCurrentTeacher;
 use App\Filament\Resources\AssignmentResource\Pages;
 use App\Filament\Resources\AssignmentResource\RelationManagers;
 use App\Models\Assignment;
+use App\Support\MathHtml;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
@@ -170,6 +171,7 @@ class AssignmentResource extends Resource
                     TextEntry::make('description')
                         ->label('Deskripsi / Soal')
                         ->html()
+                        ->formatStateUsing(fn ($state) => MathHtml::render($state))
                         ->placeholder('—')
                         ->columnSpanFull(),
                 ])->columns(2),
