@@ -13,3 +13,16 @@
     display: inline-block;
     white-space: normal;
 }
+
+/* Pembungkus math hasil App\Support\MathHtml: biar rumus panjang bisa di-scroll
+   horizontal, bukan merusak lebar kolom. */
+.math-block {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    padding: 2px 0;
+}
+
+.math-inline > .katex {
+    white-space: nowrap;
+}

@@ -499,7 +499,7 @@ function SubmissionPreview({
                     <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">Jawaban</div>
                     <div className="mt-2 rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-800">
                         <MathContent
-                            html={submission.content}
+                            html={submission.content_html ?? submission.content}
                             className="prose prose-sm prose-slate max-w-none prose-p:my-2"
                         />
                     </div>

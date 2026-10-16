@@ -50,7 +50,10 @@ export interface ExamSessionSummary {
 
 export interface ExamSubmissionDetail {
     id: string;
+    /** Jawaban mentah — dipakai untuk mengisi editor saat edit. */
     content: string | null;
+    /** Jawaban siap tampil: math sudah berdelimiter & HTML tersanitasi. */
+    content_html: string | null;
     link_url: string | null;
     submitted_at: string | null;
     score: number | null;
