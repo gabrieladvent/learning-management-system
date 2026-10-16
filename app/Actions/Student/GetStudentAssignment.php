@@ -224,6 +224,9 @@ class GetStudentAssignment
             'submitted_at' => $submission->submitted_at?->toIso8601String(),
             'score' => $submission->score !== null ? (float) $submission->score : null,
             'feedback' => $submission->feedback,
+            // Feedback guru ditulis di textarea polos: baris barunya perlu <br>
+            // dan math-nya perlu delimiter sebelum sampai ke MathContent.
+            'feedback_html' => MathHtml::render($submission->feedback),
             'files' => $files,
         ];
     }

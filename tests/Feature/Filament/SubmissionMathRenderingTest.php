@@ -2,16 +2,21 @@
 
 namespace Tests\Feature\Filament;
 
+use App\Filament\Resources\AssignmentResource;
 use App\Filament\Resources\AssignmentResource\Pages\EditAssignment;
 use App\Filament\Resources\AssignmentResource\Pages\ViewAssignment;
 use App\Filament\Resources\AssignmentResource\RelationManagers\SubmissionsRelationManager;
 use App\Models\AssignmentSubmission;
+use App\Models\User;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Concerns\CreatesProgressFixtures;
 use Tests\TestCase;
 
@@ -76,6 +81,51 @@ class SubmissionMathRenderingTest extends TestCase
         // Tidak ada lagi LaTeX yang menggantung tanpa delimiter.
         $this->assertStringNotContainsString(
             'Diketahui: \sin \theta',
+            html_entity_decode($html, ENT_QUOTES | ENT_HTML5)
+        );
+    }
+
+    /**
+     * Deskripsi/soal buatan guru di halaman View juga harus ter-render,
+     * bukan tampil sebagai LaTeX mentah.
+     */
+    public function test_assignment_description_math_renders_on_view_page(): void
+    {
+        Role::findOrCreate('super_admin', 'web');
+
+        $school = $this->makeSchool();
+        $teacher = $this->makeTeacher();
+        $classroom = $this->makeClassroom($school, $teacher);
+        $cs = $this->makeClassroomSubject($classroom, $this->makeSubject(), $teacher);
+        $material = $this->makeMaterial($cs);
+        $assignment = $this->makeAssignment($material, [
+            'description' => '<div>Hitung \sin \theta = \frac{9}{41} lalu sederhanakan.</div>',
+        ]);
+
+        // Halaman View dijaga Shield; pakai super_admin supaya yang diuji murni
+        // rendering infolist-nya, bukan aturan izinnya (itu punya TeacherScopingTest).
+        $admin = User::create([
+            'name' => 'Admin', 'email' => 'admin-'.Str::random(6).'@test.local',
+            'password' => bcrypt('password'), 'is_active' => true,
+        ]);
+        $admin->assignRole('super_admin');
+        // Permission Shield tidak ikut RefreshDatabase, jadi diberikan eksplisit.
+        // `view_any_assignment` dipakai Resource::canAccess (route guard),
+        // `view_assignment` dipakai ViewRecord::authorizeAccess.
+        $admin->givePermissionTo(Permission::findOrCreate('view_any_assignment', 'web'));
+        $admin->givePermissionTo(Permission::findOrCreate('view_assignment', 'web'));
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $this->actingAs($admin);
+        Filament::setCurrentPanel(Filament::getPanel('teacher'));
+
+        $html = $this->get(AssignmentResource::getUrl('view', ['record' => $assignment], panel: 'teacher'))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('math-inline', $html);
+        $this->assertStringNotContainsString(
+            'Hitung \sin \theta',
             html_entity_decode($html, ENT_QUOTES | ENT_HTML5)
         );
     }

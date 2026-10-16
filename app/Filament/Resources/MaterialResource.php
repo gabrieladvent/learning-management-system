@@ -7,6 +7,7 @@ use App\Filament\Resources\MaterialResource\Pages;
 use App\Filament\Resources\MaterialResource\RelationManagers;
 use App\Models\ClassroomSubject;
 use App\Models\Material;
+use App\Support\MathHtml;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Section;
@@ -161,6 +162,7 @@ class MaterialResource extends Resource
                     TextEntry::make('content')
                         ->label('')
                         ->html()
+                        ->formatStateUsing(fn ($state) => MathHtml::render($state))
                         ->columnSpanFull(),
                 ])
                 ->visible(fn ($record) => filled($record->content)),

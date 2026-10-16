@@ -5,6 +5,7 @@ namespace Tests\Feature\Student;
 use App\Actions\Student\GetStudentAssignment;
 use App\Actions\Student\GetStudentExamSession;
 use App\Actions\Student\GetStudentMaterial;
+use App\Models\AssignmentSubmission;
 use App\Models\Classroom;
 use App\Models\ClassroomSubject;
 use App\Models\ExamQuestion;
@@ -86,6 +87,54 @@ class TeacherContentMathRenderingTest extends TestCase
         $this->assertStringContainsString('math-inline', $question['question']);
         $this->assertStringContainsString('math-inline', $question['options']['A']);
         $this->assertStringContainsString('$\frac{4}{5}$', $question['options']['A']);
+    }
+
+    public function test_teacher_feedback_keeps_line_breaks_and_renders_math(): void
+    {
+        [$school, $classroom, $cs] = $this->courseTree();
+        $material = $this->makeMaterial($cs);
+        $assignment = $this->makeAssignment($material);
+        $student = $this->makeStudent($school, $classroom);
+
+        AssignmentSubmission::create([
+            'assignment_id' => $assignment->id,
+            'student_id' => $student->id,
+            'content' => '<div>jawaban saya</div>',
+            'submitted_at' => Carbon::now(),
+            'score' => 80,
+            'feedback' => "Nomor 2 kurang tepat.\nSeharusnya \\frac{1}{2}, bukan 2.",
+        ]);
+
+        $payload = app(GetStudentAssignment::class)->handle($student, $material->id, $assignment->id);
+
+        $this->assertStringContainsString('<br>', $payload['submission']['feedback_html']);
+        $this->assertStringContainsString('math-inline', $payload['submission']['feedback_html']);
+    }
+
+    /**
+     * Jawaban mentah WAJIB tetap utuh: ini yang dimuat ke editor Trix saat siswa
+     * mengedit. Kalau ikut dinormalisasi, tanda $ akan tertanam ke jawaban siswa.
+     */
+    public function test_raw_submission_content_is_untouched_for_the_editor(): void
+    {
+        [$school, $classroom, $cs] = $this->courseTree();
+        $material = $this->makeMaterial($cs);
+        $assignment = $this->makeAssignment($material);
+        $student = $this->makeStudent($school, $classroom);
+
+        $raw = '<div>Jawaban: \sin \theta = \frac{9}{41}</div>';
+
+        AssignmentSubmission::create([
+            'assignment_id' => $assignment->id,
+            'student_id' => $student->id,
+            'content' => $raw,
+            'submitted_at' => Carbon::now(),
+        ]);
+
+        $payload = app(GetStudentAssignment::class)->handle($student, $material->id, $assignment->id);
+
+        $this->assertSame($raw, $payload['submission']['content']);
+        $this->assertStringContainsString('math-inline', $payload['submission']['content_html']);
     }
 
     /**

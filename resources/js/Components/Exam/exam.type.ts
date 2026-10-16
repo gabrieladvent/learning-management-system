@@ -58,6 +58,8 @@ export interface ExamSubmissionDetail {
     submitted_at: string | null;
     score: number | null;
     feedback: string | null;
+    /** Feedback siap tampil: baris baru jadi <br>, math berdelimiter. */
+    feedback_html: string | null;
     files: MaterialFile[];
 }
 

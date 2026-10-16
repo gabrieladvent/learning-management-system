@@ -221,7 +221,10 @@ export default function AssignmentDetail() {
                     {submission?.feedback && (
                         <Section title="Feedback Guru" icon={MessageSquare}>
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">
-                                {submission.feedback}
+                                <MathContent
+                                    html={submission.feedback_html ?? submission.feedback ?? ''}
+                                    className="prose prose-sm prose-slate max-w-none prose-p:my-1"
+                                />
                             </div>
                         </Section>
                     )}
